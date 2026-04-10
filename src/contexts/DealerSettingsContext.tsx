@@ -35,6 +35,14 @@ export interface DealerSettings {
   addendum_custom_height: string;  // inches
   product_default_mode: "all_installed" | "all_optional" | "selective";
   allow_type_override_at_signing: boolean;
+  // Dealer documentation fee
+  doc_fee_enabled: boolean;
+  doc_fee_amount: number;
+  doc_fee_state: string;  // 2-letter state code
+  // Compliance
+  cars_act_mode: boolean;         // CA CARS Act strict compliance (12pt disclosures, bilingual, 2yr retention)
+  retention_years: number;        // Audit log retention policy
+  required_languages: string[];   // ISO codes: en, es, zh, tl, vi, ko
 }
 
 export const DEFAULT_SETTINGS: DealerSettings = {
@@ -66,6 +74,12 @@ export const DEFAULT_SETTINGS: DealerSettings = {
   addendum_custom_height: "11",
   product_default_mode: "selective",
   allow_type_override_at_signing: true,
+  doc_fee_enabled: false,
+  doc_fee_amount: 0,
+  doc_fee_state: "CT",
+  cars_act_mode: false,
+  retention_years: 7,
+  required_languages: ["en"],
 };
 
 interface DealerSettingsContextType {
