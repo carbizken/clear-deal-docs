@@ -1,0 +1,150 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { Search, FileText, ArrowLeft, Eye } from "lucide-react";
+
+const SavedAddendums = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+
+  const { data: addendums, isLoading } = useQuery({
+    queryKey: ["addendums"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("addendums")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const filtered = addendums?.filter((a) => {
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return (
+      (a.vehicle_ymm || "").toLowerCase().includes(q) ||
+      (a.vehicle_vin || "").toLowerCase().includes(q) ||
+      (a.vehicle_stock || "").toLowerCase().includes(q) ||
+      (a.customer_name || "").toLowerCase().includes(q) ||
+      a.status.toLowerCase().includes(q)
+    );
+  });
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <p className="text-muted-foreground mb-4">Sign in to view saved addendums.</p>
+        <button onClick={() => navigate("/login")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-85">
+          🔑 Login
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate("/")} className="p-2 rounded-md hover:bg-muted transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold font-barlow-condensed text-foreground">Saved Addendums</h1>
+          </div>
+          <button onClick={() => navigate("/")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-85">
+            + New Addendum
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by vehicle, VIN, stock #, customer name, or status..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+
+        {/* Table */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading addendums…</p>
+          </div>
+        ) : !filtered?.length ? (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-muted-foreground">{search ? "No addendums match your search." : "No saved addendums yet."}</p>
+          </div>
+        ) : (
+          <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Date</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Vehicle</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Stock #</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">VIN</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Customer</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Total</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((a) => (
+                    <tr key={a.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <td className="px-4 py-3">{format(new Date(a.created_at), "MMM d, yyyy")}</td>
+                      <td className="px-4 py-3">{a.vehicle_ymm || "—"}</td>
+                      <td className="px-4 py-3">{a.vehicle_stock || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{a.vehicle_vin || "—"}</td>
+                      <td className="px-4 py-3">{a.customer_name || "—"}</td>
+                      <td className="px-4 py-3">{a.total_with_optional != null ? `$${Number(a.total_with_optional).toFixed(2)}` : "—"}</td>
+                      <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => navigate(`/?id=${a.id}`)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 py-3 border-t text-xs text-muted-foreground">
+              {filtered.length} addendum{filtered.length !== 1 ? "s" : ""}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const styles: Record<string, string> = {
+    draft: "bg-muted text-muted-foreground",
+    signed: "bg-teal/15 text-teal",
+    completed: "bg-teal/15 text-teal",
+  };
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${styles[status] || styles.draft}`}>
+      {status}
+    </span>
+  );
+};
+
+export default SavedAddendums;
