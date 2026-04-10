@@ -19,6 +19,7 @@ export interface DealerSettings {
   feature_custom_branding: boolean;
   feature_ink_saving: boolean;
   feature_spanish_buyers_guide: boolean;
+  feature_url_scrape: boolean;
 }
 
 export const DEFAULT_SETTINGS: DealerSettings = {
@@ -36,6 +37,7 @@ export const DEFAULT_SETTINGS: DealerSettings = {
   feature_custom_branding: false,
   feature_ink_saving: true,
   feature_spanish_buyers_guide: false,
+  feature_url_scrape: true,
 };
 
 interface DealerSettingsContextType {

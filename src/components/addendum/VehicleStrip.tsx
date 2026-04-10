@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useVinDecode } from "@/hooks/useVinDecode";
+import { useVehicleUrlScrape, ScrapedVehicle } from "@/hooks/useVehicleUrlScrape";
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
 
 interface VehicleStripProps {
   vehicle: { ymm: string; stock: string; vin: string; date: string };
   onChange: (v: { ymm: string; stock: string; vin: string; date: string }) => void;
   onVinDecoded?: (result: { year: string; make: string; model: string; trim: string; bodyStyle: string }) => void;
+  onVehicleScraped?: (result: ScrapedVehicle) => void;
   inkSaving?: boolean;
 }
 
@@ -16,10 +18,14 @@ const fields = [
   { label: "Date", key: "date" as const, placeholder: "e.g. 04/04/2026" },
 ];
 
-const VehicleStrip = ({ vehicle, onChange, onVinDecoded, inkSaving }: VehicleStripProps) => {
+const VehicleStrip = ({ vehicle, onChange, onVinDecoded, onVehicleScraped, inkSaving }: VehicleStripProps) => {
   const { decode, decoding, error: vinError } = useVinDecode();
+  const { scrape, scraping, error: scrapeError } = useVehicleUrlScrape();
   const { settings } = useDealerSettings();
   const [decoded, setDecoded] = useState(false);
+  const [scraped, setScraped] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [showUrlBar, setShowUrlBar] = useState(false);
 
   const handleVinDecode = async () => {
     if (!vehicle.vin.trim()) return;
@@ -32,8 +38,74 @@ const VehicleStrip = ({ vehicle, onChange, onVinDecoded, inkSaving }: VehicleStr
     }
   };
 
+  const handleUrlScrape = async () => {
+    if (!urlInput.trim()) return;
+    const result = await scrape(urlInput);
+    if (result) {
+      onChange({
+        ymm: result.ymm || vehicle.ymm,
+        stock: result.stock || vehicle.stock,
+        vin: result.vin || vehicle.vin,
+        date: vehicle.date,
+      });
+      setScraped(true);
+      onVehicleScraped?.(result);
+      onVinDecoded?.({
+        year: result.year,
+        make: result.make,
+        model: result.model,
+        trim: result.trim,
+        bodyStyle: result.bodyStyle,
+      });
+      setTimeout(() => setScraped(false), 3000);
+    }
+  };
+
   return (
     <div className={`px-3 py-2 text-[9px] ${inkSaving ? "bg-card" : "bg-blue/10"}`}>
+      {/* URL Import Bar */}
+      {settings.feature_url_scrape && (
+        <div className="mb-2 no-print">
+          {!showUrlBar ? (
+            <button
+              onClick={() => setShowUrlBar(true)}
+              className="text-[9px] font-semibold text-action hover:underline"
+            >
+              + Import from website URL
+            </button>
+          ) : (
+            <div className="flex gap-1 items-center">
+              <input
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleUrlScrape()}
+                placeholder="Paste vehicle listing URL from your website (e.g. https://yourdealer.com/inventory/2026-honda-crv)"
+                className="flex-1 px-2 py-1.5 border border-border-custom rounded text-[10px] bg-card text-foreground outline-none placeholder:text-muted-foreground/50"
+              />
+              <button
+                onClick={handleUrlScrape}
+                disabled={scraping || !urlInput.trim()}
+                className={`shrink-0 text-[9px] font-bold px-3 py-1.5 rounded transition-all ${
+                  scraped
+                    ? "bg-teal text-primary-foreground"
+                    : "bg-action text-primary-foreground hover:opacity-85"
+                } disabled:opacity-40`}
+              >
+                {scraping ? "Importing..." : scraped ? "Imported" : "Import"}
+              </button>
+              <button
+                onClick={() => { setShowUrlBar(false); setUrlInput(""); }}
+                className="shrink-0 text-[9px] px-2 py-1.5 text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {scrapeError && <p className="text-[8px] text-red mt-0.5">{scrapeError}</p>}
+        </div>
+      )}
+
+      {/* Vehicle fields */}
       <div className="grid grid-cols-4 gap-2">
         {fields.map((f) => (
           <div key={f.key}>

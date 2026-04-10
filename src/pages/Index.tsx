@@ -18,6 +18,8 @@ import AddendumFooter from "@/components/addendum/AddendumFooter";
 import QRCodeModal from "@/components/addendum/QRCodeModal";
 import LeadCaptureModal from "@/components/addendum/LeadCaptureModal";
 import VinBarcode from "@/components/addendum/VinBarcode";
+import VehicleDetailsBar from "@/components/addendum/VehicleDetailsBar";
+import { ScrapedVehicle } from "@/hooks/useVehicleUrlScrape";
 
 const Index = () => {
   const { data: products, isLoading } = useProducts();
@@ -50,6 +52,9 @@ const Index = () => {
   const [customerSig, setCustomerSig] = useState({ data: "", type: "draw" as "draw" | "type" });
   const [cobuyerSig, setCobuyerSig] = useState({ data: "", type: "draw" as "draw" | "type" });
   const [employeeSig, setEmployeeSig] = useState({ data: "", type: "draw" as "draw" | "type" });
+
+  // Scraped vehicle details (from URL import)
+  const [vehicleDetails, setVehicleDetails] = useState<Partial<ScrapedVehicle>>({});
 
   // QR / Lead capture modal
   const [qrOpen, setQrOpen] = useState(false);
@@ -128,6 +133,10 @@ const Index = () => {
       trim: result.trim,
       bodyStyle: result.bodyStyle,
     });
+  };
+
+  const handleVehicleScraped = (result: ScrapedVehicle) => {
+    setVehicleDetails(result);
   };
 
   const handlePrint = () => window.print();
@@ -310,13 +319,18 @@ const Index = () => {
       {/* Addendum Card */}
       <div ref={cardRef} className="addendum-card max-w-[8.5in] mx-auto bg-card shadow-lg rounded-lg overflow-hidden border border-border-custom">
         <AddendumHeader inkSaving={inkSaving} />
-        <VehicleStrip vehicle={vehicle} onChange={setVehicle} onVinDecoded={handleVinDecoded} inkSaving={inkSaving} />
+        <VehicleStrip vehicle={vehicle} onChange={setVehicle} onVinDecoded={handleVinDecoded} onVehicleScraped={handleVehicleScraped} inkSaving={inkSaving} />
 
         {/* VIN Barcode */}
         {settings.feature_vin_barcode && vehicle.vin.trim().length === 17 && (
           <div className="px-3 py-1 border-b border-border-custom flex justify-center">
             <VinBarcode vin={vehicle.vin.trim()} />
           </div>
+        )}
+
+        {/* Scraped vehicle details */}
+        {Object.keys(vehicleDetails).length > 0 && (vehicleDetails.mileage || vehicleDetails.color || vehicleDetails.condition || vehicleDetails.price) && (
+          <VehicleDetailsBar details={vehicleDetails} inkSaving={inkSaving} />
         )}
 
         <div className="px-3 py-2 space-y-2">

@@ -58,6 +58,7 @@ const FEATURE_TOGGLES: { key: keyof DealerSettings; label: string; description: 
   { key: "feature_lead_capture", label: "Lead Capture", description: "Capture customer name, phone, and email when sending QR signing links" },
   { key: "feature_cobuyer_signature", label: "Co-Buyer Signature", description: "Show co-buyer signature pad on the addendum" },
   { key: "feature_ink_saving", label: "Ink-Saving Mode", description: "Show ink-saving toggle for lighter print output" },
+  { key: "feature_url_scrape", label: "Website URL Import", description: "Paste a vehicle listing URL from your website to auto-fill vehicle details (VIN, stock #, mileage, color, price)" },
   { key: "feature_custom_branding", label: "Custom Branding", description: "Use custom dealer logo and branding on addendums" },
 ];
 
