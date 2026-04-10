@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
@@ -19,13 +19,27 @@ import QRCodeModal from "@/components/addendum/QRCodeModal";
 import LeadCaptureModal from "@/components/addendum/LeadCaptureModal";
 import VinBarcode from "@/components/addendum/VinBarcode";
 import VehicleDetailsBar from "@/components/addendum/VehicleDetailsBar";
+import StoreSelector from "@/components/StoreSelector";
 import { ScrapedVehicle } from "@/hooks/useVehicleUrlScrape";
+import { useAudit } from "@/contexts/AuditContext";
+import { useTenant } from "@/contexts/TenantContext";
+import { QRCodeSVG } from "qrcode.react";
+
+// Paper size map (width in inches)
+const PAPER_WIDTHS: Record<string, string> = {
+  letter: "8.5in",
+  legal: "8.5in",
+  "half-sheet": "5.5in",
+  custom: "8.5in",
+};
 
 const Index = () => {
   const { data: products, isLoading } = useProducts();
   const { user, isAdmin } = useAuth();
   const { settings } = useDealerSettings();
   const { rules, getMatchingProducts } = useProductRules();
+  const { log } = useAudit();
+  const { currentStore } = useTenant();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const viewId = searchParams.get("id");
@@ -44,6 +58,12 @@ const Index = () => {
     year: "", make: "", model: "", trim: "", bodyStyle: "",
   });
 
+  // Scraped vehicle details (from URL import)
+  const [vehicleDetails, setVehicleDetails] = useState<Partial<ScrapedVehicle>>({});
+
+  // Product type overrides — employee can toggle installed <-> optional at signing time
+  const [typeOverrides, setTypeOverrides] = useState<Record<string, "installed" | "optional">>({});
+
   // Initials & optional selections
   const [initials, setInitials] = useState<Record<string, string>>({});
   const [optionalSelections, setOptionalSelections] = useState<Record<string, string>>({});
@@ -53,12 +73,14 @@ const Index = () => {
   const [cobuyerSig, setCobuyerSig] = useState({ data: "", type: "draw" as "draw" | "type" });
   const [employeeSig, setEmployeeSig] = useState({ data: "", type: "draw" as "draw" | "type" });
 
-  // Scraped vehicle details (from URL import)
-  const [vehicleDetails, setVehicleDetails] = useState<Partial<ScrapedVehicle>>({});
-
   // QR / Lead capture modal
   const [qrOpen, setQrOpen] = useState(false);
   const [signingUrl, setSigningUrl] = useState("");
+
+  // Paper size
+  const paperWidth = settings.addendum_paper_size === "custom"
+    ? `${settings.addendum_custom_width || "8.5"}in`
+    : PAPER_WIDTHS[settings.addendum_paper_size] || "8.5in";
 
   // Load saved addendum when ?id= is present
   useEffect(() => {
@@ -110,14 +132,38 @@ const Index = () => {
     loadAddendum();
   }, [viewId]);
 
-  // Apply product rules when vehicle context or products change
+  // Apply product rules, then apply admin default mode + overrides
   const baseProducts = viewMode && loadedProducts ? loadedProducts : products;
-  const displayProducts = settings.feature_product_rules && rules.length > 0 && !viewMode
+  const ruledProducts = settings.feature_product_rules && rules.length > 0 && !viewMode
     ? getMatchingProducts(vehicleContext, baseProducts || [])
     : baseProducts;
 
-  const installed = displayProducts?.filter((p) => p.badge_type === "installed") || [];
-  const optional = displayProducts?.filter((p) => p.badge_type === "optional") || [];
+  // Apply product_default_mode from admin settings, then per-product overrides
+  const displayProducts = useMemo(() => {
+    if (!ruledProducts) return [];
+    return ruledProducts.map(p => {
+      // Check for employee override first
+      if (typeOverrides[p.id]) {
+        const overType = typeOverrides[p.id];
+        return {
+          ...p,
+          badge_type: overType,
+          price_label: overType === "installed" ? "Included in Selling Price" : "If Accepted",
+        };
+      }
+      // Apply admin default mode
+      if (settings.product_default_mode === "all_installed") {
+        return { ...p, badge_type: "installed", price_label: "Included in Selling Price" };
+      }
+      if (settings.product_default_mode === "all_optional") {
+        return { ...p, badge_type: "optional", price_label: "If Accepted" };
+      }
+      return p; // "selective" = use whatever's set per product
+    });
+  }, [ruledProducts, typeOverrides, settings.product_default_mode]);
+
+  const installed = displayProducts.filter((p) => p.badge_type === "installed");
+  const optional = displayProducts.filter((p) => p.badge_type === "optional");
   const installedTotal = installed.reduce((sum, p) => sum + p.price, 0);
   const acceptedOptional = optional.filter((p) => optionalSelections[p.id] === "accept");
   const optionalTotal = acceptedOptional.reduce((sum, p) => sum + p.price, 0);
@@ -125,21 +171,33 @@ const Index = () => {
 
   const iconMap = JSON.parse(localStorage.getItem("product_icons") || "{}");
 
+  const handleToggleProductType = (productId: string) => {
+    const current = displayProducts.find(p => p.id === productId);
+    if (!current) return;
+    const newType = current.badge_type === "installed" ? "optional" : "installed";
+    setTypeOverrides(prev => ({ ...prev, [productId]: newType as "installed" | "optional" }));
+    // Clear optional selection if switching to installed
+    if (newType === "installed") {
+      setOptionalSelections(prev => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+    }
+  };
+
   const handleVinDecoded = (result: { year: string; make: string; model: string; trim: string; bodyStyle: string }) => {
-    setVehicleContext({
-      year: result.year,
-      make: result.make,
-      model: result.model,
-      trim: result.trim,
-      bodyStyle: result.bodyStyle,
-    });
+    setVehicleContext({ year: result.year, make: result.make, model: result.model, trim: result.trim, bodyStyle: result.bodyStyle });
   };
 
   const handleVehicleScraped = (result: ScrapedVehicle) => {
     setVehicleDetails(result);
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    window.print();
+    if (user) log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_printed", entity_type: "addendum", entity_id: vehicle.vin, details: { ymm: vehicle.ymm } });
+  };
 
   const handleDownloadPdf = async () => {
     const card = cardRef.current;
@@ -154,7 +212,9 @@ const Index = () => {
       const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
       const pdf = new jsPDF({ unit: "in", format: [pdfWidth, pdfHeight], orientation: "portrait" });
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Dealer-Addendum-${settings.dealer_name.replace(/\s+/g, "-")}.pdf`);
+      const storeName = currentStore?.name || settings.dealer_name;
+      pdf.save(`Dealer-Addendum-${storeName.replace(/\s+/g, "-")}.pdf`);
+      if (user) log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_pdf", entity_type: "addendum", entity_id: vehicle.vin, details: { ymm: vehicle.ymm } });
     } catch (err) {
       console.error("PDF generation failed:", err);
       toast.error("PDF generation failed");
@@ -192,6 +252,7 @@ const Index = () => {
     setSigningUrl(url);
     setQrOpen(true);
     toast.success("Signing link created!");
+    log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_sent", entity_type: "addendum", entity_id: vehicle.vin, details: { ymm: vehicle.ymm, token } });
   };
 
   const handleSave = async () => {
@@ -218,6 +279,7 @@ const Index = () => {
 
     setSaving(true);
     const now = new Date().toISOString();
+    const token = crypto.randomUUID();
     const payload = {
       created_by: user.id,
       vehicle_ymm: vehicle.ymm,
@@ -239,18 +301,28 @@ const Index = () => {
       total_installed: installedTotal,
       total_with_optional: grandTotal,
       status: customerSig.data && employeeSig.data ? "signed" : "draft",
+      signing_token: token,
     };
     const { error } = await supabase.from("addendums").insert([payload]);
     setSaving(false);
-    if (error) { toast.error(error.message); } else { toast.success("Addendum saved!"); }
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Addendum saved!");
+      log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_created", entity_type: "addendum", entity_id: vehicle.vin, details: { ymm: vehicle.ymm, vin: vehicle.vin, status: payload.status, products_count: displayProducts.length, installed_total: installedTotal, optional_total: optionalTotal, type_overrides: typeOverrides } });
+    }
   };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground animate-pulse">Loading products...</p></div>;
 
+  // Signing URL for barcode on the printed addendum
+  const addendumSigningUrl = signingUrl || (vehicle.vin ? `${window.location.origin}/sign/pending-${vehicle.vin}` : "");
+
   return (
     <div className="min-h-screen bg-background py-4 px-2 md:px-4">
       {/* Controls */}
-      <div className="max-w-[8.5in] mx-auto mb-3 flex flex-wrap gap-2 items-center no-print">
+      <div style={{ maxWidth: paperWidth }} className="mx-auto mb-3 flex flex-wrap gap-2 items-center no-print">
+        <StoreSelector />
         {viewMode && (
           <button onClick={() => navigate("/")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85">
             ← New Addendum
@@ -309,15 +381,15 @@ const Index = () => {
 
       {/* Rules notification */}
       {settings.feature_product_rules && rules.length > 0 && vehicleContext.make && !viewMode && (
-        <div className="max-w-[8.5in] mx-auto mb-2 no-print">
+        <div style={{ maxWidth: paperWidth }} className="mx-auto mb-2 no-print">
           <div className="bg-teal/10 border border-teal/30 rounded-md px-3 py-1.5 text-[11px] text-teal font-semibold">
             Product rules active — showing {displayProducts?.length || 0} products matching {vehicleContext.year} {vehicleContext.make} {vehicleContext.model}
           </div>
         </div>
       )}
 
-      {/* Addendum Card */}
-      <div ref={cardRef} className="addendum-card max-w-[8.5in] mx-auto bg-card shadow-lg rounded-lg overflow-hidden border border-border-custom">
+      {/* Addendum Card — scales to paper size */}
+      <div ref={cardRef} style={{ maxWidth: paperWidth }} className="addendum-card mx-auto bg-card shadow-lg rounded-lg overflow-hidden border border-border-custom">
         <AddendumHeader inkSaving={inkSaving} />
         <VehicleStrip vehicle={vehicle} onChange={setVehicle} onVinDecoded={handleVinDecoded} onVehicleScraped={handleVehicleScraped} inkSaving={inkSaving} />
 
@@ -348,26 +420,44 @@ const Index = () => {
           {/* Product Table Header */}
           <div className="flex text-[8px] font-bold text-muted-foreground border-b border-border-custom pb-0.5">
             <span className="w-5">#</span>
+            {settings.allow_type_override_at_signing && !viewMode && <span className="w-14 text-center no-print">Type</span>}
             <span className="flex-1">Product Name & Description</span>
             <span className="w-24 text-right">Dealer Retail Price</span>
           </div>
 
-          {/* Products */}
+          {/* Products with inline type override toggle */}
           {displayProducts?.map((p, i) => (
-            <ProductRow
-              key={p.id}
-              num={i + 1}
-              name={p.name}
-              subtitle={p.subtitle || ""}
-              warranty={p.warranty || ""}
-              badgeType={p.badge_type as "installed" | "optional"}
-              price={`$${p.price.toFixed(2)}`}
-              priceLabel={p.price_label || ""}
-              disclosure={p.disclosure || ""}
-              isOptional={p.badge_type === "optional"}
-              inkSaving={inkSaving}
-              iconType={iconMap[p.id] || ""}
-            />
+            <div key={p.id} className="flex items-start gap-0">
+              {settings.allow_type_override_at_signing && !viewMode && (
+                <button
+                  onClick={() => handleToggleProductType(p.id)}
+                  className="no-print w-14 shrink-0 mt-2 flex flex-col items-center gap-0.5"
+                  title={`Click to switch to ${p.badge_type === "installed" ? "optional" : "installed"}`}
+                >
+                  <div className={`relative w-8 h-4 rounded-full transition-colors ${p.badge_type === "installed" ? "bg-navy" : "bg-gold"}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-card shadow transition-transform ${p.badge_type === "installed" ? "translate-x-0.5" : "translate-x-4"}`} />
+                  </div>
+                  <span className="text-[6px] text-muted-foreground font-semibold">
+                    {p.badge_type === "installed" ? "INST" : "OPT"}
+                  </span>
+                </button>
+              )}
+              <div className="flex-1 min-w-0">
+                <ProductRow
+                  num={i + 1}
+                  name={p.name}
+                  subtitle={p.subtitle || ""}
+                  warranty={p.warranty || ""}
+                  badgeType={p.badge_type as "installed" | "optional"}
+                  price={`$${p.price.toFixed(2)}`}
+                  priceLabel={p.price_label || ""}
+                  disclosure={p.disclosure || ""}
+                  isOptional={p.badge_type === "optional"}
+                  inkSaving={inkSaving}
+                  iconType={iconMap[p.id] || ""}
+                />
+              </div>
+            </div>
           ))}
 
           <TotalBar
@@ -389,6 +479,18 @@ const Index = () => {
             inkSaving={inkSaving}
           />
           <Disclosures inkSaving={inkSaving} />
+
+          {/* Signing QR Barcode — printed on every addendum for remote signing */}
+          {addendumSigningUrl && (
+            <div className="flex items-center justify-between border border-border-custom rounded px-3 py-2">
+              <div>
+                <p className="text-[8px] font-bold text-foreground">Remote Signing</p>
+                <p className="text-[7px] text-muted-foreground">Scan to sign this addendum electronically</p>
+                <p className="text-[6px] text-muted-foreground mt-0.5 font-mono break-all max-w-[3in]">{addendumSigningUrl}</p>
+              </div>
+              <QRCodeSVG value={addendumSigningUrl} size={60} />
+            </div>
+          )}
 
           {/* Signature Section */}
           <div className="space-y-3 pt-2">

@@ -1,6 +1,10 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
+import { useAudit } from "@/contexts/AuditContext";
+import { useTenant } from "@/contexts/TenantContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 type GuideType = "as-is" | "implied" | "warranty";
 type Language = "en" | "es";
@@ -85,6 +89,9 @@ const WARRANTY_SYSTEMS = ["system_engine", "system_transmission", "system_steeri
 const BuyersGuide = () => {
   const navigate = useNavigate();
   const { settings } = useDealerSettings();
+  const { log } = useAudit();
+  const { currentStore } = useTenant();
+  const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const [guideType, setGuideType] = useState<GuideType>("as-is");
@@ -97,6 +104,27 @@ const BuyersGuide = () => {
   const [coveredSystems, setCoveredSystems] = useState<string[]>(WARRANTY_SYSTEMS);
 
   const L = LABELS[lang];
+
+  const handleSave = () => {
+    const record = {
+      id: crypto.randomUUID(),
+      store_id: currentStore?.id || "",
+      vehicle_vin: vehicle.vin,
+      vehicle_ymm: [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" "),
+      guide_type: guideType,
+      language: lang,
+      warranty_duration: warrantyDuration,
+      warranty_percentage: warrantyPct,
+      covered_systems: coveredSystems,
+      created_by: user?.id || "",
+      created_at: new Date().toISOString(),
+    };
+    const saved = JSON.parse(localStorage.getItem("buyers_guides") || "[]");
+    saved.push(record);
+    localStorage.setItem("buyers_guides", JSON.stringify(saved));
+    log({ store_id: currentStore?.id || "", user_id: user?.id || "", action: "buyers_guide_created", entity_type: "buyers_guide", entity_id: record.id, details: { vin: vehicle.vin, type: guideType, language: lang } });
+    toast.success("Buyers Guide saved!");
+  };
 
   const handlePrint = () => window.print();
 
@@ -148,6 +176,11 @@ const BuyersGuide = () => {
         <button onClick={handleDownloadPdf} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85">
           Download PDF
         </button>
+        {user && (
+          <button onClick={handleSave} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-teal text-primary-foreground tracking-[0.4px] hover:opacity-85">
+            Save Guide
+          </button>
+        )}
       </div>
 
       {/* Guide Card */}

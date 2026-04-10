@@ -20,6 +20,21 @@ export interface DealerSettings {
   feature_ink_saving: boolean;
   feature_spanish_buyers_guide: boolean;
   feature_url_scrape: boolean;
+  // Extended feature toggles
+  feature_inventory: boolean;
+  feature_invoicing: boolean;
+  feature_warranty: boolean;
+  feature_payroll: boolean;
+  feature_analytics: boolean;
+  feature_sms: boolean;
+  feature_ai_descriptions: boolean;
+  feature_blackbook: boolean;
+  // Addendum sizing & product defaults
+  addendum_paper_size: "letter" | "legal" | "half-sheet" | "custom";
+  addendum_custom_width: string;   // inches
+  addendum_custom_height: string;  // inches
+  product_default_mode: "all_installed" | "all_optional" | "selective";
+  allow_type_override_at_signing: boolean;
 }
 
 export const DEFAULT_SETTINGS: DealerSettings = {
@@ -38,6 +53,19 @@ export const DEFAULT_SETTINGS: DealerSettings = {
   feature_ink_saving: true,
   feature_spanish_buyers_guide: false,
   feature_url_scrape: true,
+  feature_inventory: false,
+  feature_invoicing: false,
+  feature_warranty: false,
+  feature_payroll: false,
+  feature_analytics: false,
+  feature_sms: false,
+  feature_ai_descriptions: false,
+  feature_blackbook: false,
+  addendum_paper_size: "letter",
+  addendum_custom_width: "8.5",
+  addendum_custom_height: "11",
+  product_default_mode: "selective",
+  allow_type_override_at_signing: true,
 };
 
 interface DealerSettingsContextType {

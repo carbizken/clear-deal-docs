@@ -1,4 +1,5 @@
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
+import { useTenant } from "@/contexts/TenantContext";
 
 interface AddendumHeaderProps {
   inkSaving?: boolean;
@@ -6,20 +7,25 @@ interface AddendumHeaderProps {
 
 const AddendumHeader = ({ inkSaving }: AddendumHeaderProps) => {
   const { settings } = useDealerSettings();
+  const { currentStore, tenant } = useTenant();
+
+  const name = currentStore?.name || settings.dealer_name;
+  const tagline = currentStore?.tagline || settings.dealer_tagline;
+  const logo = currentStore?.logo_url || settings.dealer_logo_url || tenant?.logo_url;
 
   return (
     <div className={`text-center py-3 border-b-2 border-navy ${inkSaving ? "bg-card" : "bg-navy text-primary-foreground"}`}>
-      {settings.dealer_logo_url && settings.feature_custom_branding && (
+      {logo && settings.feature_custom_branding && (
         <img
-          src={settings.dealer_logo_url}
-          alt={settings.dealer_name}
+          src={logo}
+          alt={name}
           className="h-8 mx-auto mb-1 object-contain"
         />
       )}
       <h1 className="text-lg font-extrabold tracking-wide font-barlow-condensed uppercase">Dealer Addendum</h1>
       <p className="text-[9px] tracking-widest mt-0.5 opacity-80">Supplemental Window Label · Dealer-Installed Products &amp; Accessories</p>
-      <p className="text-[10px] font-semibold mt-1">{settings.dealer_name}</p>
-      <p className="text-[8px] opacity-70">{settings.dealer_tagline}</p>
+      <p className="text-[10px] font-semibold mt-1">{name}</p>
+      <p className="text-[8px] opacity-70">{tagline}</p>
     </div>
   );
 };
