@@ -109,7 +109,7 @@ const AppShell = ({ children }: AppShellProps) => {
   };
 
   const filterItems = (items: NavItem[]) =>
-    items.filter(i => !i.featureKey || (settings as Record<string, unknown>)[i.featureKey]);
+    items.filter(i => !i.featureKey || (settings as unknown as Record<string, unknown>)[i.featureKey]);
 
   const handleSignOut = async () => {
     await signOut();
