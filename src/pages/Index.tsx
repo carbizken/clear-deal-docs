@@ -19,11 +19,12 @@ import QRCodeModal from "@/components/addendum/QRCodeModal";
 import LeadCaptureModal from "@/components/addendum/LeadCaptureModal";
 import VinBarcode from "@/components/addendum/VinBarcode";
 import VehicleDetailsBar from "@/components/addendum/VehicleDetailsBar";
-import StoreSelector from "@/components/StoreSelector";
+import CustomerInfoSection, { CustomerInfo, emptyCustomerInfo } from "@/components/addendum/CustomerInfoSection";
 import { ScrapedVehicle } from "@/hooks/useVehicleUrlScrape";
 import { useAudit } from "@/contexts/AuditContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { QRCodeSVG } from "qrcode.react";
+import { ArrowLeft, Save, Send, Printer, Download } from "lucide-react";
 
 // Paper size map (width in inches)
 const PAPER_WIDTHS: Record<string, string> = {
@@ -52,6 +53,9 @@ const Index = () => {
 
   // Vehicle info
   const [vehicle, setVehicle] = useState({ ymm: "", stock: "", vin: "", date: "" });
+
+  // Customer info — buyer and co-buyer
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>(emptyCustomerInfo);
 
   // Decoded vehicle context for rules
   const [vehicleContext, setVehicleContext] = useState<VehicleContext>({
@@ -108,6 +112,21 @@ const Index = () => {
       });
       setInitials((data.initials as Record<string, string>) || {});
       setOptionalSelections((data.optional_selections as Record<string, string>) || {});
+
+      // Populate customer info from saved full name fields
+      const [bFirst, ...bRest] = (data.customer_name || "").split(" ");
+      const [cFirst, ...cRest] = (data.cobuyer_name || "").split(" ");
+      setCustomerInfo({
+        buyer_first_name: bFirst || "",
+        buyer_last_name: bRest.join(" "),
+        buyer_phone: "",
+        buyer_email: "",
+        cobuyer_first_name: cFirst || "",
+        cobuyer_last_name: cRest.join(" "),
+        cobuyer_phone: "",
+        cobuyer_email: "",
+      });
+
       setCustomerSig({
         data: data.customer_signature_data || "",
         type: (data.customer_signature_type as "draw" | "type") || "draw",
@@ -298,6 +317,8 @@ const Index = () => {
       products_snapshot: JSON.parse(JSON.stringify(displayProducts || [])),
       initials,
       optional_selections: optionalSelections,
+      customer_name: [customerInfo.buyer_first_name, customerInfo.buyer_last_name].filter(Boolean).join(" ") || null,
+      cobuyer_name: [customerInfo.cobuyer_first_name, customerInfo.cobuyer_last_name].filter(Boolean).join(" ") || null,
       customer_signature_data: customerSig.data,
       customer_signature_type: customerSig.type,
       customer_signed_at: customerSig.data ? now : null,
@@ -322,63 +343,84 @@ const Index = () => {
     }
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground animate-pulse">Loading products...</p></div>;
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <p className="text-muted-foreground animate-pulse">Loading products...</p>
+    </div>
+  );
 
   // Signing URL for barcode on the printed addendum
   const addendumSigningUrl = signingUrl || (vehicle.vin ? `${window.location.origin}/sign/pending-${vehicle.vin}` : "");
 
   return (
-    <div className="min-h-screen bg-background py-4 px-2 md:px-4">
-      {/* Controls */}
-      <div style={{ maxWidth: paperWidth }} className="mx-auto mb-3 flex flex-wrap gap-2 items-center no-print">
-        <StoreSelector />
-        {viewMode && (
-          <button onClick={() => navigate("/")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85">
-            ← New Addendum
+    <div className="bg-muted/30 py-6 px-4 lg:px-8 min-h-[calc(100vh-3.5rem)]">
+      {/* Page header + action bar */}
+      <div style={{ maxWidth: paperWidth }} className="mx-auto mb-4 flex items-center justify-between flex-wrap gap-3 no-print">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight font-display text-foreground">
+            {viewMode ? "View Addendum" : "New Addendum"}
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {viewMode ? "Read-only view of a signed or saved addendum" : "Build, sign, and send a dealer addendum to your customer"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {viewMode && (
+            <button
+              onClick={() => navigate("/")}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              New
+            </button>
+          )}
+          {user && !viewMode && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5" />
+              {saving ? "Saving..." : "Save"}
+            </button>
+          )}
+          {user && !viewMode && (
+            <button
+              onClick={handleSendToCustomer}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-teal text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Send to Customer
+            </button>
+          )}
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Print
           </button>
-        )}
-        {user && isAdmin && (
-          <button onClick={() => navigate("/admin")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-gold text-navy tracking-[0.4px] hover:opacity-85">
-            Admin Panel
+          <button
+            onClick={handleDownloadPdf}
+            disabled={generating}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {generating ? "Generating..." : "PDF"}
           </button>
-        )}
-        {user && (
-          <button onClick={() => navigate("/saved")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-blue text-primary-foreground tracking-[0.4px] hover:opacity-85">
-            Saved Addendums
-          </button>
-        )}
-        {settings.feature_buyers_guide && user && (
-          <button onClick={() => navigate("/buyers-guide")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85">
-            Buyers Guide
-          </button>
-        )}
-        {!user && (
-          <button onClick={() => navigate("/login")} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85">
-            Admin Login
-          </button>
-        )}
-        {user && !viewMode && (
-          <button onClick={handleSave} disabled={saving} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-teal text-primary-foreground tracking-[0.4px] hover:opacity-85 disabled:opacity-50">
-            {saving ? "Saving..." : "Save Addendum"}
-          </button>
-        )}
-        {user && !viewMode && (
-          <button onClick={handleSendToCustomer} disabled={saving} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-action text-primary-foreground tracking-[0.4px] hover:opacity-85 disabled:opacity-50">
-            Send to Customer
-          </button>
-        )}
-        <button onClick={handlePrint} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85">
-          Print
-        </button>
-        <button onClick={handleDownloadPdf} disabled={generating} className="font-semibold text-[13px] px-5 py-2 rounded-md bg-navy text-primary-foreground tracking-[0.4px] hover:opacity-85 disabled:opacity-50">
-          {generating ? "Generating..." : "Download PDF"}
-        </button>
-        {settings.feature_ink_saving && (
-          <label className="flex items-center gap-1 text-[11px] text-muted-foreground cursor-pointer">
-            <input type="checkbox" checked={inkSaving} onChange={(e) => setInkSaving(e.target.checked)} />
-            Ink-Saving Mode
-          </label>
-        )}
+          {settings.feature_ink_saving && (
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer ml-1">
+              <input
+                type="checkbox"
+                checked={inkSaving}
+                onChange={(e) => setInkSaving(e.target.checked)}
+                className="rounded border-border"
+              />
+              Ink-saving
+            </label>
+          )}
+        </div>
       </div>
 
       {/* QR / Lead Capture Modal */}
@@ -401,6 +443,16 @@ const Index = () => {
       <div ref={cardRef} style={{ maxWidth: paperWidth }} className="addendum-card mx-auto bg-card shadow-lg rounded-lg overflow-hidden border border-border-custom">
         <AddendumHeader inkSaving={inkSaving} />
         <VehicleStrip vehicle={vehicle} onChange={setVehicle} onVinDecoded={handleVinDecoded} onVehicleScraped={handleVehicleScraped} inkSaving={inkSaving} />
+
+        {/* Customer Info (Buyer + optional Co-Buyer) */}
+        <div className="px-3 pt-2">
+          <CustomerInfoSection
+            info={customerInfo}
+            onChange={setCustomerInfo}
+            showCobuyer={settings.feature_cobuyer_signature}
+            inkSaving={inkSaving}
+          />
+        </div>
 
         {/* VIN Barcode */}
         {settings.feature_vin_barcode && vehicle.vin.trim().length === 17 && (

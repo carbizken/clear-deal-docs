@@ -52,7 +52,7 @@ const ProductRow = ({ num, name, subtitle, warranty, badgeType, price, priceLabe
   const icon = settings.feature_product_icons && iconType ? (PRODUCT_ICONS[iconType] || PRODUCT_ICONS.default) : null;
 
   return (
-    <div className={`border-b border-border-custom py-2 px-2 ${isOptional ? "bg-gold/5" : ""}`}>
+    <div className={`border-b border-border-custom py-2 px-2 border-l-4 transition-colors ${isOptional ? "bg-gold/5 border-l-gold" : "bg-blue/5 border-l-blue"}`}>
       <div className="flex gap-2">
         <span className="text-[10px] font-bold text-muted-foreground w-5 shrink-0 pt-0.5">{num}</span>
         {icon && (
@@ -65,7 +65,7 @@ const ProductRow = ({ num, name, subtitle, warranty, badgeType, price, priceLabe
           <p className="text-[8px] text-muted-foreground leading-tight mt-0.5">{subtitle}</p>
           <p className="text-[8px] text-muted-foreground">{warranty}</p>
           {badgeType === "installed" ? (
-            <span className="inline-block mt-0.5 text-[7px] font-bold bg-navy text-primary-foreground px-1.5 py-0.5 rounded-sm">⚙ Pre-Installed · Non-Removable</span>
+            <span className="inline-block mt-0.5 text-[7px] font-bold bg-blue text-primary-foreground px-1.5 py-0.5 rounded-sm">⚙ Pre-Installed · Non-Removable</span>
           ) : (
             <span className="inline-block mt-0.5 text-[7px] font-bold bg-gold text-navy px-1.5 py-0.5 rounded-sm">✦ Optional — Consumer May Accept or Decline</span>
           )}

@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DealerSettingsProvider } from "@/contexts/DealerSettingsContext";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { AuditProvider } from "@/contexts/AuditContext";
+import AppShell from "@/components/layout/AppShell";
+import Dashboard from "./pages/Dashboard.tsx";
 import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -28,12 +30,17 @@ const App = () => (
             <AuditProvider>
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  {/* Public routes — no shell */}
                   <Route path="/login" element={<Login />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/saved" element={<SavedAddendums />} />
-                  <Route path="/buyers-guide" element={<BuyersGuide />} />
                   <Route path="/sign/:token" element={<MobileSigning />} />
+
+                  {/* Signed-in routes — wrapped in AppShell */}
+                  <Route path="/" element={<AppShell><Index /></AppShell>} />
+                  <Route path="/dashboard" element={<AppShell><Dashboard /></AppShell>} />
+                  <Route path="/admin" element={<AppShell><Admin /></AppShell>} />
+                  <Route path="/saved" element={<AppShell><SavedAddendums /></AppShell>} />
+                  <Route path="/buyers-guide" element={<AppShell><BuyersGuide /></AppShell>} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

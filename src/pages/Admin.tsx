@@ -209,34 +209,74 @@ const Admin = () => {
         {/* ─── Products Tab ─── */}
         {tab === "products" && (
           <div>
-            <button
-              onClick={() => setEditing({ ...emptyProduct, sort_order: products.length + 1 })}
-              className="mb-4 px-4 py-2 bg-teal text-primary-foreground rounded font-semibold text-sm"
-            >
-              + Add Product
-            </button>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Products</h2>
+                <p className="text-xs text-muted-foreground">Toggle each product as installed or optional. Changes apply to every new addendum instantly.</p>
+              </div>
+              <button
+                onClick={() => setEditing({ ...emptyProduct, sort_order: products.length + 1 })}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              >
+                + Add Product
+              </button>
+            </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {products.map((p) => {
                 const iconMap = JSON.parse(localStorage.getItem("product_icons") || "{}");
                 const icon = iconMap[p.id];
+                const isInstalled = p.badge_type === "installed";
+                const toggleType = async () => {
+                  const next = isInstalled ? "optional" : "installed";
+                  const priceLabel = next === "installed" ? "Included in Selling Price" : "If Accepted";
+                  const { error } = await supabase.from("products").update({ badge_type: next, price_label: priceLabel }).eq("id", p.id);
+                  if (error) { toast.error(error.message); return; }
+                  toast.success(`${p.name} marked as ${next}`);
+                  fetchProducts();
+                };
                 return (
-                  <div key={p.id} className="bg-card rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                  <div
+                    key={p.id}
+                    className={`bg-card rounded-lg p-4 shadow-premium border-l-4 transition-colors ${
+                      isInstalled ? "border-l-blue" : "border-l-gold"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Inline type toggle — blue=installed, yellow=optional */}
+                        <button
+                          onClick={toggleType}
+                          className="flex flex-col items-center gap-0.5 flex-shrink-0"
+                          title={`Click to switch to ${isInstalled ? "Optional" : "Installed"}`}
+                        >
+                          <div className={`relative w-10 h-5 rounded-full transition-colors ${isInstalled ? "bg-blue" : "bg-gold"}`}>
+                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isInstalled ? "translate-x-0.5" : "translate-x-[22px]"}`} />
+                          </div>
+                          <span className={`text-[9px] font-bold uppercase tracking-wider ${isInstalled ? "text-blue" : "text-gold"}`}>
+                            {isInstalled ? "Installed" : "Optional"}
+                          </span>
+                        </button>
+
                         {icon && settings.feature_product_icons && (
-                          <span className="text-lg">{PRODUCT_ICONS[icon] || "⚙️"}</span>
+                          <span className="text-xl flex-shrink-0">{PRODUCT_ICONS[icon] || "⚙️"}</span>
                         )}
-                        <div>
-                          <span className="font-semibold text-foreground">{p.name}</span>
-                          <span className="ml-2 text-xs text-muted-foreground">{p.badge_type}</span>
-                          {!p.is_active && <span className="ml-2 text-xs text-destructive">INACTIVE</span>}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground truncate">{p.name}</span>
+                            {!p.is_active && (
+                              <span className="text-[10px] font-semibold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded uppercase">
+                                Inactive
+                              </span>
+                            )}
+                          </div>
+                          {p.subtitle && <p className="text-xs text-muted-foreground truncate">{p.subtitle}</p>}
                         </div>
                       </div>
-                      <div className="flex gap-2 items-center">
-                        <span className="text-sm font-semibold text-foreground">${p.price.toFixed(2)}</span>
-                        <button onClick={() => setEditing({ ...p, icon_type: iconMap[p.id] || "" })} className="text-xs px-3 py-1 bg-blue text-primary-foreground rounded">Edit</button>
-                        <button onClick={() => handleDeleteProduct(p.id)} className="text-xs px-3 py-1 bg-destructive text-primary-foreground rounded">Delete</button>
+                      <div className="flex gap-2 items-center flex-shrink-0">
+                        <span className="text-sm font-semibold text-foreground tabular-nums">${p.price.toFixed(2)}</span>
+                        <button onClick={() => setEditing({ ...p, icon_type: iconMap[p.id] || "" })} className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted text-foreground font-medium transition-colors">Edit</button>
+                        <button onClick={() => handleDeleteProduct(p.id)} className="text-xs px-3 py-1.5 rounded-md border border-destructive/20 hover:bg-destructive/5 text-destructive font-medium transition-colors">Delete</button>
                       </div>
                     </div>
                     {p.subtitle && <p className="text-xs text-muted-foreground mt-1">{p.subtitle}</p>}
