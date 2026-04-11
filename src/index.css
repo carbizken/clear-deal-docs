@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,110 +6,122 @@
 
 @layer base {
   :root {
-    /* Premium neutral palette — near-white background, near-black text, single accent */
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
+    /* HarteCash / Autocurb — dark navy primary, light content area */
+    --background: 220 23% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary — deep navy, the accent */
-    --primary: 222 47% 11%;
+    /* Deep navy primary */
+    --primary: 217 71% 15%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 15%;
+    --secondary-foreground: 222 47% 11%;
 
     --muted: 220 14% 96%;
-    --muted-foreground: 220 8% 46%;
+    --muted-foreground: 220 9% 46%;
 
     --accent: 220 14% 96%;
-    --accent-foreground: 220 9% 15%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 222 47% 11%;
-    --radius: 0.625rem;
+    --ring: 217 71% 15%;
+    --radius: 0.75rem;
 
-    /* Domain-specific accents (used sparingly for status, badges, data viz) */
-    --navy: 222 47% 11%;
-    --blue: 214 95% 48%;
-    --action: 214 95% 48%;
+    /* Brand accents — used for badges, gradients, status chips */
+    --navy: 217 71% 15%;
+    --navy-light: 214 60% 25%;
+    --blue: 217 91% 60%;
+    --blue-bright: 214 95% 52%;
+    --action: 217 91% 60%;
     --teal: 172 66% 38%;
+    --green: 142 71% 45%;
     --gold: 38 92% 50%;
+    --amber: 38 92% 50%;
+    --orange: 24 95% 53%;
+    --purple: 262 83% 58%;
+    --red: 0 84% 60%;
     --light: 220 14% 96%;
     --mid: 220 13% 91%;
-    --text: 224 71% 4%;
-    --muted-custom: 220 8% 46%;
-    --red: 0 72% 51%;
+    --text: 222 47% 11%;
+    --muted-custom: 220 9% 46%;
     --border-custom: 220 13% 91%;
 
-    /* Sidebar (app shell) */
-    --sidebar-background: 220 14% 96%;
-    --sidebar-foreground: 220 9% 15%;
-    --sidebar-primary: 222 47% 11%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 220 13% 91%;
-    --sidebar-accent-foreground: 220 9% 15%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 222 47% 11%;
+    /* Sidebar — dark charcoal with light text (HarteCash style) */
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 20% 88%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
 
-    --card: 224 71% 6%;
+    --card: 222 47% 9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 224 71% 6%;
+    --popover: 222 47% 9%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
     --primary-foreground: 222 47% 11%;
 
-    --secondary: 217 33% 12%;
+    --secondary: 217 33% 15%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 12%;
+    --muted: 217 33% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 217 33% 12%;
+    --accent: 217 33% 15%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 63% 45%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217 33% 18%;
     --input: 217 33% 18%;
-    --ring: 214 95% 48%;
+    --ring: 217 91% 60%;
 
-    --navy: 222 47% 11%;
-    --blue: 214 95% 55%;
-    --action: 214 95% 55%;
+    --navy: 217 71% 15%;
+    --navy-light: 214 60% 25%;
+    --blue: 217 91% 60%;
+    --blue-bright: 214 95% 52%;
+    --action: 217 91% 60%;
     --teal: 172 66% 45%;
+    --green: 142 71% 45%;
     --gold: 38 92% 55%;
-    --light: 217 33% 12%;
+    --amber: 38 92% 55%;
+    --orange: 24 95% 53%;
+    --purple: 262 83% 58%;
+    --red: 0 84% 60%;
+    --light: 217 33% 15%;
     --mid: 217 33% 18%;
     --text: 210 40% 98%;
     --muted-custom: 215 20% 65%;
-    --red: 0 63% 55%;
     --border-custom: 217 33% 18%;
 
-    --sidebar-background: 224 71% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 33% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 18%;
-    --sidebar-ring: 214 95% 48%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 20% 88%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 33% 15%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -121,6 +133,8 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', 'Barlow', -apple-system, system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -135,6 +149,7 @@
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
+
   /* Premium multi-layer shadows */
   .shadow-premium {
     box-shadow:
@@ -152,6 +167,33 @@
       0 10px 25px -5px rgb(0 0 0 / 0.08),
       0 8px 10px -6px rgb(0 0 0 / 0.04),
       0 0 0 1px rgb(0 0 0 / 0.04);
+  }
+
+  /* HarteCash-style gradient stat cards */
+  .stat-card-blue {
+    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(224 76% 48%) 100%);
+    color: white;
+  }
+  .stat-card-green {
+    background: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(158 64% 40%) 100%);
+    color: white;
+  }
+  .stat-card-orange {
+    background: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(14 91% 50%) 100%);
+    color: white;
+  }
+  .stat-card-purple {
+    background: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(280 81% 50%) 100%);
+    color: white;
+  }
+  .stat-card-navy {
+    background: linear-gradient(135deg, hsl(217 71% 15%) 0%, hsl(222 47% 11%) 100%);
+    color: white;
+  }
+
+  /* Top bar gradient */
+  .topbar-navy {
+    background: linear-gradient(90deg, hsl(217 71% 12%) 0%, hsl(222 60% 15%) 50%, hsl(217 71% 12%) 100%);
   }
 }
 

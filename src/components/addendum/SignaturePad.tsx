@@ -50,6 +50,10 @@ const SignaturePad = ({ label, subtitle, value, type: sigType, onChange, classNa
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing.current) return;
+    // Only prevent default (stops page scroll) when we're actively drawing
+    if ("touches" in e) {
+      e.preventDefault();
+    }
     const ctx = canvasRef.current?.getContext("2d");
     if (ctx) {
       const { x, y } = getPos(e);
@@ -102,7 +106,8 @@ const SignaturePad = ({ label, subtitle, value, type: sigType, onChange, classNa
             ref={canvasRef}
             width={400}
             height={80}
-            className="w-full border-b-2 border-border-custom bg-card rounded cursor-crosshair touch-none"
+            className="w-full border-b-2 border-border-custom bg-card rounded cursor-crosshair"
+            style={{ touchAction: "pan-y" }}
             onMouseDown={startDraw}
             onMouseMove={draw}
             onMouseUp={endDraw}

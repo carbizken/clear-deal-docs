@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Settings,
   Bell,
-  Search,
   ChevronsUpDown,
   LogOut,
   Store,
@@ -19,6 +18,14 @@ import {
   Sparkles,
   ScrollText,
   Wrench,
+  Moon,
+  Sun,
+  ChevronDown,
+  ChevronRight,
+  Rocket,
+  Palette,
+  ToggleLeft,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
@@ -41,25 +48,15 @@ interface NavItem {
   label: string;
   path: string;
   icon: typeof LayoutDashboard;
-  section?: string;
+  badge?: string | number;
   featureKey?: string;
 }
 
-const NAV: NavItem[] = [
-  { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard, section: "Workspace" },
-  { label: "New Addendum", path: "/", icon: FileText, section: "Workspace" },
-  { label: "Saved Addendums", path: "/saved", icon: FolderOpen, section: "Workspace" },
-  { label: "Buyers Guide", path: "/buyers-guide", icon: ScrollText, section: "Workspace", featureKey: "feature_buyers_guide" },
-
-  { label: "Products", path: "/admin?tab=products", icon: Package, section: "Configuration" },
-  { label: "Product Rules", path: "/admin?tab=rules", icon: Wrench, section: "Configuration", featureKey: "feature_product_rules" },
-  { label: "Branding", path: "/admin?tab=branding", icon: Sparkles, section: "Configuration" },
-  { label: "Feature Toggles", path: "/admin?tab=settings", icon: Settings, section: "Configuration" },
-
-  { label: "Analytics", path: "/admin?tab=analytics", icon: BarChart3, section: "Insights", featureKey: "feature_analytics" },
-  { label: "Leads", path: "/admin?tab=leads", icon: Users, section: "Insights", featureKey: "feature_lead_capture" },
-  { label: "Compliance Log", path: "/admin?tab=audit", icon: ShieldCheck, section: "Insights" },
-];
+interface NavSection {
+  title: string;
+  items: NavItem[];
+  defaultOpen?: boolean;
+}
 
 const AppShell = ({ children }: AppShellProps) => {
   const { user, signOut } = useAuth();
@@ -69,17 +66,62 @@ const AppShell = ({ children }: AppShellProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    workspace: true,
+    configuration: true,
+    insights: true,
+    admin: true,
+  });
 
-  const filteredNav = NAV.filter(n => !n.featureKey || (settings as any)[n.featureKey]);
-  const sections = Array.from(new Set(filteredNav.map(n => n.section).filter(Boolean)));
+  const sections: Record<string, NavSection> = {
+    workspace: {
+      title: "WORKSPACE",
+      defaultOpen: true,
+      items: [
+        { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+        { label: "New Addendum", path: "/", icon: FileText },
+        { label: "Saved Addendums", path: "/saved", icon: FolderOpen },
+        { label: "Buyers Guide", path: "/buyers-guide", icon: ScrollText, featureKey: "feature_buyers_guide" },
+      ],
+    },
+    configuration: {
+      title: "CONFIGURATION",
+      defaultOpen: true,
+      items: [
+        { label: "Products", path: "/admin?tab=products", icon: Package },
+        { label: "Product Rules", path: "/admin?tab=rules", icon: Wrench, featureKey: "feature_product_rules" },
+        { label: "Branding", path: "/admin?tab=branding", icon: Palette },
+        { label: "Feature Toggles", path: "/admin?tab=settings", icon: ToggleLeft },
+      ],
+    },
+    insights: {
+      title: "INSIGHTS",
+      defaultOpen: true,
+      items: [
+        { label: "Analytics", path: "/admin?tab=analytics", icon: BarChart3, featureKey: "feature_analytics" },
+        { label: "Leads", path: "/admin?tab=leads", icon: Users, featureKey: "feature_lead_capture" },
+        { label: "Compliance Log", path: "/admin?tab=audit", icon: ShieldCheck },
+      ],
+    },
+  };
+
+  const filterItems = (items: NavItem[]) =>
+    items.filter(i => !i.featureKey || (settings as Record<string, unknown>)[i.featureKey]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/login");
   };
 
-  const userInitial = user?.email?.[0]?.toUpperCase() || "U";
-  const recentNotifications = entries.slice(-5).reverse();
+  const handleToggleDark = () => {
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle("dark");
+  };
+
+  const toggleSection = (key: string) => {
+    setOpenSections({ ...openSections, [key]: !openSections[key] });
+  };
 
   const isActive = (path: string): boolean => {
     const [pathname, query] = path.split("?");
@@ -88,22 +130,67 @@ const AppShell = ({ children }: AppShellProps) => {
     return location.search.includes(query);
   };
 
+  // Build breadcrumbs from current path
+  const breadcrumbs = (() => {
+    const pathname = location.pathname;
+    const search = location.search;
+    const crumbs: { label: string; path?: string }[] = [{ label: "Dashboard", path: "/dashboard" }];
+
+    if (pathname === "/dashboard") return crumbs;
+    if (pathname === "/") { crumbs.push({ label: "New Addendum" }); return crumbs; }
+    if (pathname === "/saved") { crumbs.push({ label: "Saved Addendums" }); return crumbs; }
+    if (pathname === "/buyers-guide") { crumbs.push({ label: "Buyers Guide" }); return crumbs; }
+    if (pathname === "/admin") {
+      const tab = new URLSearchParams(search).get("tab") || "products";
+      const tabLabels: Record<string, string> = {
+        products: "Products",
+        rules: "Product Rules",
+        branding: "Branding",
+        settings: "Feature Toggles",
+        analytics: "Analytics",
+        leads: "Leads",
+        audit: "Compliance Log",
+      };
+      crumbs.push({ label: "Admin", path: "/admin" });
+      crumbs.push({ label: tabLabels[tab] || "Settings" });
+      return crumbs;
+    }
+    return crumbs;
+  })();
+
+  const userInitial = user?.email?.[0]?.toUpperCase() || "U";
+  const recentNotifications = entries.slice(-8).reverse();
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
+  const firstName = user?.email?.split("@")[0].split(".")[0] || "there";
+  const capitalized = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-60 border-r border-border bg-sidebar transform transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-sidebar border-r border-sidebar-border flex flex-col transform transition-transform lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between h-14 px-4 border-b border-sidebar-border">
+        {/* Sidebar header */}
+        <div className="flex items-center justify-between h-14 px-4 border-b border-sidebar-border/50 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary-foreground" />
+            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue to-action flex items-center justify-center shadow-sm">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold text-sm tracking-tight text-sidebar-foreground">
-              {tenant?.name || "Clear Deal"}
-            </span>
+            <div>
+              <p className="text-sm font-semibold text-sidebar-foreground leading-none tracking-tight">
+                {tenant?.name || "Clear Deal"}
+              </p>
+              <p className="text-[10px] text-sidebar-foreground/50 mt-0.5 uppercase tracking-wider">
+                Addendum Platform
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
@@ -115,20 +202,20 @@ const AppShell = ({ children }: AppShellProps) => {
 
         {/* Store Selector */}
         {stores.length > 0 && (
-          <div className="px-3 py-3 border-b border-sidebar-border">
+          <div className="px-3 py-3 border-b border-sidebar-border/50 flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-sidebar-accent transition-colors text-left group">
-                  <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
-                    <Store className="w-3.5 h-3.5 text-muted-foreground" />
+                <button className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors text-left group">
+                  <div className="w-7 h-7 rounded-md bg-sidebar-accent flex items-center justify-center flex-shrink-0">
+                    <Store className="w-3.5 h-3.5 text-sidebar-foreground/70" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Store</p>
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                    <p className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider font-semibold">Store</p>
+                    <p className="text-xs font-medium text-sidebar-foreground truncate">
                       {currentStore?.name || "No store"}
                     </p>
                   </div>
-                  <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  <ChevronsUpDown className="w-3.5 h-3.5 text-sidebar-foreground/50 flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
@@ -149,41 +236,81 @@ const AppShell = ({ children }: AppShellProps) => {
           </div>
         )}
 
-        {/* Nav */}
-        <nav className="px-3 py-3 space-y-5 overflow-y-auto h-[calc(100vh-8rem)]">
-          {sections.map(section => (
-            <div key={section}>
-              <p className="px-2 mb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {section}
-              </p>
-              <div className="space-y-0.5">
-                {filteredNav
-                  .filter(n => n.section === section)
-                  .map(item => {
-                    const Icon = item.icon;
-                    const active = isActive(item.path);
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => {
-                          navigate(item.path);
-                          setMobileOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${
-                          active
-                            ? "bg-primary text-primary-foreground font-medium"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent"
-                        }`}
-                      >
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        <span className="flex-1 text-left truncate">{item.label}</span>
-                      </button>
-                    );
-                  })}
+        {/* Nav sections */}
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
+          {Object.entries(sections).map(([key, section]) => {
+            const visibleItems = filterItems(section.items);
+            if (visibleItems.length === 0) return null;
+            const isOpen = openSections[key] !== false;
+            return (
+              <div key={key}>
+                <button
+                  onClick={() => toggleSection(key)}
+                  className="w-full flex items-center justify-between px-2 mb-1.5 group"
+                >
+                  <span className="text-[10px] font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
+                    {section.title}
+                  </span>
+                  {isOpen ? (
+                    <ChevronDown className="w-3 h-3 text-sidebar-foreground/40" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3 text-sidebar-foreground/40" />
+                  )}
+                </button>
+                {isOpen && (
+                  <div className="space-y-0.5">
+                    {visibleItems.map(item => {
+                      const Icon = item.icon;
+                      const active = isActive(item.path);
+                      return (
+                        <button
+                          key={item.path}
+                          onClick={() => {
+                            navigate(item.path);
+                            setMobileOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors ${
+                            active
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <span className="flex-1 text-left truncate">{item.label}</span>
+                          {item.badge && (
+                            <span className="text-[10px] font-semibold text-sidebar-foreground/60 tabular-nums">
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
+
+        {/* Sidebar footer — Platform Updates + Command Center */}
+        <div className="border-t border-sidebar-border/50 p-3 space-y-1 flex-shrink-0">
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors">
+            <Rocket className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1 text-left">Platform Updates</span>
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-amber-500 hover:bg-amber-500/10 transition-colors">
+            <Tag className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1 text-left font-medium">Command Center</span>
+          </button>
+          <div className="pt-2 text-center">
+            <p className="text-[9px] text-sidebar-foreground/40 uppercase tracking-wider">
+              {tenant?.name?.toUpperCase() || "CLEAR DEAL"}
+            </p>
+            <p className="text-[9px] text-sidebar-foreground/30 mt-0.5">
+              Powered by {tenant?.name || "Clear Deal"}
+            </p>
+          </div>
+        </div>
       </aside>
 
       {/* Mobile backdrop */}
@@ -195,36 +322,53 @@ const AppShell = ({ children }: AppShellProps) => {
       )}
 
       {/* Main content area */}
-      <div className="lg:pl-60">
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur-md">
-          <div className="flex items-center justify-between h-full px-4 lg:px-6">
-            <div className="flex items-center gap-3">
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+        {/* Top bar — HarteCash navy gradient style */}
+        <header className="sticky top-0 z-20 topbar-navy text-white border-b border-white/10">
+          <div className="flex items-center justify-between h-14 px-4 lg:px-6">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-1.5 rounded-md hover:bg-muted"
+                className="lg:hidden p-1.5 rounded-md hover:bg-white/10"
               >
                 <Menu className="w-5 h-5" />
               </button>
 
-              {/* Search (cmd+K placeholder) */}
-              <button className="hidden md:flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted/50 hover:bg-muted transition-colors text-muted-foreground text-sm min-w-[280px]">
-                <Search className="w-4 h-4" />
-                <span>Search...</span>
-                <kbd className="ml-auto text-[10px] bg-background border border-border rounded px-1.5 py-0.5 font-mono">
-                  ⌘K
-                </kbd>
-              </button>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate leading-tight">
+                  {greeting}, {capitalized}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-500 text-amber-950 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    Admin
+                  </span>
+                  {currentStore?.name && (
+                    <span className="text-[11px] text-white/70 truncate">
+                      · {currentStore.name}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Dark mode toggle */}
+              <button
+                onClick={handleToggleDark}
+                className="p-2 rounded-md hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+                title="Toggle dark mode"
+              >
+                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
               {/* Notifications */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="relative p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                  <button className="relative p-2 rounded-md hover:bg-white/10 text-white/80 hover:text-white transition-colors">
                     <Bell className="w-4 h-4" />
                     {recentNotifications.length > 0 && (
-                      <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue" />
+                      <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
                     )}
                   </button>
                 </DropdownMenuTrigger>
@@ -238,7 +382,7 @@ const AppShell = ({ children }: AppShellProps) => {
                   ) : (
                     recentNotifications.map(e => (
                       <div key={e.id} className="px-3 py-2 text-xs border-b border-border last:border-0">
-                        <p className="font-medium text-foreground">{e.action.replace(/_/g, " ")}</p>
+                        <p className="font-medium text-foreground capitalize">{e.action.replace(/_/g, " ")}</p>
                         <p className="text-muted-foreground truncate">{e.entity_type} · {e.entity_id}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
                           {new Date(e.created_at).toLocaleString()}
@@ -249,16 +393,20 @@ const AppShell = ({ children }: AppShellProps) => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* User menu */}
+              {/* Sign out */}
+              <button
+                onClick={handleSignOut}
+                className="p-2 rounded-md hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+
+              {/* User avatar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 h-9 pl-1 pr-2.5 rounded-md hover:bg-muted transition-colors">
-                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
-                      {userInitial}
-                    </div>
-                    <span className="text-sm font-medium hidden md:inline">
-                      {user?.email?.split("@")[0] || "User"}
-                    </span>
+                  <button className="ml-1 w-8 h-8 rounded-full bg-gradient-to-br from-blue to-action text-white flex items-center justify-center text-xs font-semibold hover:ring-2 hover:ring-white/20 transition-all">
+                    {userInitial}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -284,8 +432,29 @@ const AppShell = ({ children }: AppShellProps) => {
           </div>
         </header>
 
+        {/* Breadcrumbs */}
+        <div className="h-10 flex items-center px-4 lg:px-6 bg-background border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-1.5 text-xs overflow-x-auto whitespace-nowrap">
+            {breadcrumbs.map((crumb, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />}
+                {crumb.path ? (
+                  <Link
+                    to={crumb.path}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className="text-foreground font-medium">{crumb.label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Page content */}
-        <main>{children}</main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
