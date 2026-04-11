@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./AuthContext";
 
 export interface DealerSettings {
   // Branding
@@ -46,8 +44,8 @@ export interface DealerSettings {
 }
 
 export const DEFAULT_SETTINGS: DealerSettings = {
-  dealer_name: "Harte Auto Group",
-  dealer_tagline: "Connecticut's Premier Family-Owned Dealer Group Since 1995",
+  dealer_name: "Your Dealership",
+  dealer_tagline: "Your Trusted Automotive Partner",
   dealer_logo_url: "",
   primary_color: "",
   feature_vin_decode: true,

@@ -1,5 +1,15 @@
 import { useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import type { Lead, Invoice, WarrantyRecord } from "@/types/tenant";
+
+interface CachedAddendum {
+  id?: string;
+  created_at?: string;
+  status?: string;
+  total_installed?: number;
+  total_with_optional?: number;
+  products_snapshot?: Array<{ id: string; name: string; badge_type: string; price: number }>;
+  optional_selections?: Record<string, string>;
+}
 
 interface AnalyticsData {
   totalAddendums: number;
@@ -34,8 +44,8 @@ export const useAnalytics = (storeId: string) => {
     // Product acceptance rates
     const productStats: Record<string, { name: string; accepted: number; declined: number }> = {};
     for (const a of addendums) {
-      const products = (a.products_snapshot || []) as any[];
-      const selections = (a.optional_selections || {}) as Record<string, string>;
+      const products = a.products_snapshot || [];
+      const selections = a.optional_selections || {};
       for (const p of products) {
         if (p.badge_type === "optional") {
           if (!productStats[p.id]) productStats[p.id] = { name: p.name, accepted: 0, declined: 0 };
@@ -78,19 +88,18 @@ export const useAnalytics = (storeId: string) => {
   return data;
 };
 
-function getAddendums(): any[] {
-  // Pull from Supabase cache or refetch — for now we read local
-  try { return JSON.parse(localStorage.getItem("cached_addendums") || "[]"); } catch { return []; }
+function getAddendums(): CachedAddendum[] {
+  try { return JSON.parse(localStorage.getItem("cached_addendums") || "[]") as CachedAddendum[]; } catch { return []; }
 }
 
-function getLeads(storeId: string): any[] {
-  try { return (JSON.parse(localStorage.getItem("leads") || "[]") as any[]).filter(l => l.store_id === storeId); } catch { return []; }
+function getLeads(storeId: string): Lead[] {
+  try { return (JSON.parse(localStorage.getItem("leads") || "[]") as Lead[]).filter(l => l.store_id === storeId); } catch { return []; }
 }
 
-function getInvoices(storeId: string): any[] {
-  try { return (JSON.parse(localStorage.getItem("invoices") || "[]") as any[]).filter(i => i.store_id === storeId); } catch { return []; }
+function getInvoices(storeId: string): Invoice[] {
+  try { return (JSON.parse(localStorage.getItem("invoices") || "[]") as Invoice[]).filter(i => i.store_id === storeId); } catch { return []; }
 }
 
-function getWarranties(storeId: string): any[] {
-  try { return (JSON.parse(localStorage.getItem("warranty_records") || "[]") as any[]).filter(w => w.store_id === storeId); } catch { return []; }
+function getWarranties(storeId: string): WarrantyRecord[] {
+  try { return (JSON.parse(localStorage.getItem("warranty_records") || "[]") as WarrantyRecord[]).filter(w => w.store_id === storeId); } catch { return []; }
 }

@@ -73,6 +73,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        "barlow": ["Barlow", "system-ui", "sans-serif"],
+        "barlow-condensed": ["'Barlow Condensed'", "Barlow", "system-ui", "sans-serif"],
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

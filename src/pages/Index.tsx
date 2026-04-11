@@ -120,10 +120,17 @@ const Index = () => {
         data: data.employee_signature_data || "",
         type: (data.employee_signature_type as "draw" | "type") || "draw",
       });
-      const snapshot = data.products_snapshot as any[];
-      if (snapshot?.length) {
-        setLoadedProducts(snapshot.map((p: any, i: number) => ({
-          ...p,
+      const snapshot = (data.products_snapshot || []) as Partial<Product>[];
+      if (snapshot.length) {
+        setLoadedProducts(snapshot.map((p, i) => ({
+          id: p.id || crypto.randomUUID(),
+          name: p.name || "",
+          subtitle: p.subtitle ?? null,
+          warranty: p.warranty ?? null,
+          badge_type: p.badge_type || "installed",
+          price: p.price ?? 0,
+          price_label: p.price_label ?? null,
+          disclosure: p.disclosure ?? null,
           sort_order: p.sort_order ?? i,
           is_active: true,
         })));
