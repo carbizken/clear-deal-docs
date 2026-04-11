@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useTenant } from "@/contexts/TenantContext";
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
 import { useVinDecode } from "@/hooks/useVinDecode";
@@ -9,26 +9,35 @@ import { toast } from "sonner";
 import {
   Sparkles,
   Car,
-  DollarSign,
-  TrendingUp,
   Printer,
   Download,
   Palette,
   Settings2,
+  Image as ImageIcon,
+  Link2,
+  Check,
+  X,
 } from "lucide-react";
+import {
+  STICKER_TEMPLATES,
+  TEMPLATE_CATEGORIES,
+  TemplateCategory,
+  getTemplatesByCategory,
+  StickerTemplate,
+} from "@/data/stickerTemplates";
 
 type Theme = "red" | "blue" | "green" | "navy" | "gold";
 
-const THEMES: Record<Theme, { gradient: string; accent: string; text: string; cta: string }> = {
-  red:   { gradient: "from-red-600 to-red-800",       accent: "bg-yellow-400",   text: "text-white", cta: "bg-yellow-400 text-red-900" },
-  blue:  { gradient: "from-blue-600 to-blue-900",     accent: "bg-orange-400",   text: "text-white", cta: "bg-orange-400 text-blue-900" },
-  green: { gradient: "from-emerald-600 to-emerald-900", accent: "bg-yellow-300", text: "text-white", cta: "bg-yellow-300 text-emerald-900" },
-  navy:  { gradient: "from-slate-800 to-slate-950",   accent: "bg-amber-400",    text: "text-white", cta: "bg-amber-400 text-slate-900" },
-  gold:  { gradient: "from-amber-500 to-amber-700",   accent: "bg-slate-900",    text: "text-slate-900", cta: "bg-slate-900 text-amber-400" },
+const THEMES: Record<Theme, { gradient: string; text: string; cta: string; ctaSubhead: string }> = {
+  red:   { gradient: "from-red-600 to-red-800",           text: "text-white",     cta: "bg-yellow-400 text-red-900",      ctaSubhead: "text-yellow-300" },
+  blue:  { gradient: "from-blue-600 to-blue-900",         text: "text-white",     cta: "bg-orange-400 text-blue-900",     ctaSubhead: "text-orange-300" },
+  green: { gradient: "from-emerald-600 to-emerald-900",   text: "text-white",     cta: "bg-yellow-300 text-emerald-900",  ctaSubhead: "text-yellow-200" },
+  navy:  { gradient: "from-slate-800 to-slate-950",       text: "text-white",     cta: "bg-amber-400 text-slate-900",     ctaSubhead: "text-amber-300" },
+  gold:  { gradient: "from-amber-500 to-amber-700",       text: "text-slate-900", cta: "bg-slate-900 text-amber-400",     ctaSubhead: "text-slate-900" },
 };
 
 const TradeUpSticker = () => {
-  const { currentStore, tenant } = useTenant();
+  const { currentStore, tenant, isEmbedded, sendToParent } = useTenant() as ReturnType<typeof useTenant> & { sendToParent?: (t: string, p?: unknown) => void };
   const { settings } = useDealerSettings();
   const { decode, decoding } = useVinDecode();
   const { log } = useAudit();
@@ -36,20 +45,62 @@ const TradeUpSticker = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
 
-  // Sticker state
+  // State
   const [vehicleType, setVehicleType] = useState<"new" | "used">("used");
   const [vehicle, setVehicle] = useState({ year: "", make: "", model: "", trim: "", vin: "", stock: "", mileage: "", price: "" });
   const [headline, setHeadline] = useState("WHAT'S YOUR CAR WORTH?");
   const [subhead, setSubhead] = useState("TRADE UP TODAY");
-  const [offerText, setOfferText] = useState("Get instant trade-in value and upgrade to a newer vehicle");
+  const [offerText, setOfferText] = useState("Get an instant trade-in value and upgrade to a newer vehicle.");
+  const [callText, setCallText] = useState("Scan to get your trade-in value in 60 seconds");
   const [theme, setTheme] = useState<Theme>("red");
-  const [qrUrl, setQrUrl] = useState("");
-  const [callText, setCallText] = useState("Scan to get your trade-in value");
+  const [customQrUrl, setCustomQrUrl] = useState("");
+  const [logoSource, setLogoSource] = useState<"store" | "tenant" | "custom" | "none">("store");
+  const [customLogoUrl, setCustomLogoUrl] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("pro-instant-value");
+  const [activeCategory, setActiveCategory] = useState<TemplateCategory>("serious");
 
   const themeCfg = THEMES[theme];
   const dealerName = currentStore?.name || settings.dealer_name || tenant?.name || "Your Dealership";
   const phone = currentStore?.phone || "";
-  const website = qrUrl || `https://${currentStore?.slug || "yourdealer"}.com/trade-in`;
+
+  // Logo selection
+  const displayLogo = useMemo(() => {
+    if (logoSource === "custom") return customLogoUrl;
+    if (logoSource === "tenant") return tenant?.logo_url || "";
+    if (logoSource === "store") return currentStore?.logo_url || settings.dealer_logo_url || tenant?.logo_url || "";
+    return "";
+  }, [logoSource, customLogoUrl, tenant, currentStore, settings]);
+
+  // QR URL — prefers custom, falls back to HarteCash customer flow
+  // Embedded mode: builds URL that leads into HarteCash lead capture with VIN + store + source
+  const qrUrl = useMemo(() => {
+    if (customQrUrl.trim()) return customQrUrl;
+
+    const params = new URLSearchParams();
+    if (vehicle.vin) params.set("vin", vehicle.vin);
+    if (vehicle.stock) params.set("stock", vehicle.stock);
+    if (currentStore?.id) params.set("store", currentStore.id);
+    params.set("source", "trade_up_sticker");
+    params.set("campaign", selectedTemplateId);
+
+    // If embedded inside HarteCash, point at the parent's trade-in flow
+    if (isEmbedded && tenant?.slug) {
+      return `https://${tenant.slug}.app/trade-in?${params.toString()}`;
+    }
+
+    // Otherwise use the addon's own QR landing (lead capture still fires)
+    return `${window.location.origin}/trade-in?${params.toString()}`;
+  }, [customQrUrl, vehicle.vin, vehicle.stock, currentStore, isEmbedded, tenant, selectedTemplateId]);
+
+  const handleApplyTemplate = (template: StickerTemplate) => {
+    setSelectedTemplateId(template.id);
+    setHeadline(template.headline);
+    setSubhead(template.subhead);
+    setOfferText(template.offerText);
+    setCallText(template.callText);
+    if (template.recommendedTheme) setTheme(template.recommendedTheme);
+    toast.success(`Loaded "${template.name}" template`);
+  };
 
   const handleVinDecode = async () => {
     if (!vehicle.vin.trim()) return;
@@ -62,7 +113,10 @@ const TradeUpSticker = () => {
 
   const handlePrint = () => {
     window.print();
-    if (user) log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_printed", entity_type: "trade_up_sticker", entity_id: vehicle.vin || "sticker", details: { theme, type: vehicleType } });
+    if (user) log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_printed", entity_type: "trade_up_sticker", entity_id: vehicle.vin || "sticker", details: { theme, type: vehicleType, template: selectedTemplateId } });
+    if (isEmbedded && sendToParent) {
+      sendToParent("sticker_printed", { vin: vehicle.vin, stock: vehicle.stock, template: selectedTemplateId });
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -78,7 +132,7 @@ const TradeUpSticker = () => {
       const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
       const pdf = new jsPDF({ unit: "in", format: [pdfWidth, pdfHeight], orientation: "portrait" });
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Trade-Up-Sticker-${vehicle.vin || "draft"}.pdf`);
+      pdf.save(`Trade-Up-${vehicle.vin || vehicle.stock || "draft"}.pdf`);
     } catch (err) {
       console.error("PDF generation failed:", err);
       toast.error("PDF generation failed");
@@ -87,8 +141,10 @@ const TradeUpSticker = () => {
     }
   };
 
+  const categoryTemplates = getTemplatesByCategory(activeCategory);
+
   return (
-    <div className="p-4 lg:p-6 max-w-[1400px] mx-auto space-y-5">
+    <div className="p-4 lg:p-6 max-w-[1600px] mx-auto space-y-5">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -96,7 +152,7 @@ const TradeUpSticker = () => {
             Trade-Up Sticker
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Promotional sticker to drive trade-in leads on every vehicle on your lot.
+            Hook customers with a promotional sticker. QR scan drops them into your {isEmbedded ? tenant?.name || "HarteCash" : "lead capture"} customer flow.
           </p>
         </div>
         <div className="flex items-center gap-2 no-print">
@@ -118,6 +174,68 @@ const TradeUpSticker = () => {
         </div>
       </div>
 
+      {/* Template library */}
+      <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden no-print">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <h3 className="text-sm font-semibold text-foreground">Hook Templates</h3>
+            <span className="text-xs text-muted-foreground">· {STICKER_TEMPLATES.length} pre-built hooks across 6 categories</span>
+          </div>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-1 px-5 py-3 border-b border-border overflow-x-auto">
+          {TEMPLATE_CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                activeCategory === cat.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Template grid */}
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {categoryTemplates.map(template => {
+            const isSelected = selectedTemplateId === template.id;
+            const cfg = THEMES[template.recommendedTheme || "red"];
+            return (
+              <button
+                key={template.id}
+                onClick={() => handleApplyTemplate(template)}
+                className={`relative text-left rounded-lg overflow-hidden border-2 transition-all group ${
+                  isSelected ? "border-primary shadow-premium-md" : "border-border hover:border-border/60"
+                }`}
+              >
+                {/* Template preview */}
+                <div className={`bg-gradient-to-br ${cfg.gradient} ${cfg.text} p-4 min-h-[100px] relative`}>
+                  <p className="text-[11px] font-black leading-tight tracking-tight">{template.headline}</p>
+                  <p className={`text-[13px] font-black leading-tight tracking-tight mt-0.5 ${cfg.ctaSubhead}`}>
+                    {template.subhead}
+                  </p>
+                </div>
+                <div className="px-3 py-2 bg-card flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground truncate">{template.name}</span>
+                  {isSelected && (
+                    <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Split: config + preview */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Left: config panel */}
         <div className="lg:col-span-2 space-y-4 no-print">
@@ -178,47 +296,73 @@ const TradeUpSticker = () => {
           {/* Messaging */}
           <ConfigCard icon={Settings2} title="Messaging">
             <div className="space-y-2">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Headline</label>
-                <input
-                  value={headline}
-                  onChange={(e) => setHeadline(e.target.value.toUpperCase())}
-                  className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+              <Field label="Headline" value={headline} onChange={(v) => setHeadline(v.toUpperCase())} />
+              <Field label="Subheading" value={subhead} onChange={(v) => setSubhead(v.toUpperCase())} />
+              <Field label="Offer Text" value={offerText} onChange={setOfferText} />
+              <Field label="Call To Action" value={callText} onChange={setCallText} />
+            </div>
+          </ConfigCard>
+
+          {/* Logo */}
+          <ConfigCard icon={ImageIcon} title="Dealer Logo">
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <LogoOption
+                  active={logoSource === "store"}
+                  onClick={() => setLogoSource("store")}
+                  label="Store Logo"
+                  hasLogo={!!(currentStore?.logo_url || settings.dealer_logo_url)}
+                />
+                <LogoOption
+                  active={logoSource === "tenant"}
+                  onClick={() => setLogoSource("tenant")}
+                  label="Tenant Logo"
+                  hasLogo={!!tenant?.logo_url}
+                />
+                <LogoOption
+                  active={logoSource === "custom"}
+                  onClick={() => setLogoSource("custom")}
+                  label="Custom URL"
+                  hasLogo={!!customLogoUrl}
+                />
+                <LogoOption
+                  active={logoSource === "none"}
+                  onClick={() => setLogoSource("none")}
+                  label="No Logo"
+                  hasLogo={false}
                 />
               </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Subheading</label>
+              {logoSource === "custom" && (
                 <input
-                  value={subhead}
-                  onChange={(e) => setSubhead(e.target.value.toUpperCase())}
+                  value={customLogoUrl}
+                  onChange={(e) => setCustomLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
                   className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Offer Text</label>
-                <input
-                  value={offerText}
-                  onChange={(e) => setOfferText(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Call To Action</label>
-                <input
-                  value={callText}
-                  onChange={(e) => setCallText(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">QR / Trade-in URL</label>
-                <input
-                  value={qrUrl}
-                  onChange={(e) => setQrUrl(e.target.value)}
-                  placeholder="https://yourdealer.com/trade-in"
-                  className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+              )}
+              {displayLogo && logoSource !== "none" && (
+                <div className="p-2 bg-muted rounded-md flex items-center justify-center">
+                  <img src={displayLogo} alt="Logo preview" className="h-10 object-contain" />
+                </div>
+              )}
+            </div>
+          </ConfigCard>
+
+          {/* QR URL */}
+          <ConfigCard icon={Link2} title="Customer Flow URL">
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                QR scan drops customers into your {isEmbedded ? `${tenant?.name || "parent app"} lead flow` : "trade-in lead capture"} with vehicle + store context.
+              </p>
+              <input
+                value={customQrUrl}
+                onChange={(e) => setCustomQrUrl(e.target.value)}
+                placeholder={qrUrl}
+                className="w-full h-9 px-3 rounded-md border border-border bg-background text-xs outline-none focus:ring-2 focus:ring-ring font-mono"
+              />
+              <p className="text-[10px] text-muted-foreground break-all">
+                <strong>Resolves to:</strong> {qrUrl}
+              </p>
             </div>
           </ConfigCard>
 
@@ -247,7 +391,7 @@ const TradeUpSticker = () => {
             </p>
             <div
               ref={cardRef}
-              className={`rounded-xl overflow-hidden shadow-premium-lg bg-gradient-to-br ${themeCfg.gradient} ${themeCfg.text} relative`}
+              className={`rounded-xl overflow-hidden shadow-premium-lg bg-gradient-to-br ${themeCfg.gradient} ${themeCfg.text} relative mx-auto`}
               style={{ aspectRatio: "8.5 / 11", maxWidth: "600px" }}
             >
               {/* Background decoration */}
@@ -255,14 +399,21 @@ const TradeUpSticker = () => {
               <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-white/5 -ml-28 -mb-28" />
 
               <div className="relative h-full flex flex-col p-10">
-                {/* Top: type badge + dealer */}
+                {/* Top: type badge + dealer branding */}
                 <div className="flex items-start justify-between">
-                  <span className={`${themeCfg.accent} text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded`}>
+                  <span className="bg-white/10 backdrop-blur-sm text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded">
                     {vehicleType === "new" ? "New Arrival" : "Pre-Owned"}
                   </span>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">{dealerName}</p>
-                    {phone && <p className="text-xs opacity-80">{phone}</p>}
+                  <div className="text-right flex items-center gap-3">
+                    {displayLogo && logoSource !== "none" && (
+                      <div className="bg-white rounded p-1.5">
+                        <img src={displayLogo} alt={dealerName} className="h-8 object-contain" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold">{dealerName}</p>
+                      {phone && <p className="text-xs opacity-80">{phone}</p>}
+                    </div>
                   </div>
                 </div>
 
@@ -271,20 +422,20 @@ const TradeUpSticker = () => {
                   <p className="text-4xl font-black leading-none tracking-tight font-display drop-shadow-sm">
                     {headline}
                   </p>
-                  <div className="flex items-center justify-center my-4">
-                    <div className="h-[2px] w-12 bg-current opacity-50" />
-                    <TrendingUp className="mx-3 w-5 h-5" />
-                    <div className="h-[2px] w-12 bg-current opacity-50" />
+                  <div className="my-5 flex items-center justify-center gap-2">
+                    <div className="h-[2px] w-12 bg-current opacity-40" />
+                    <span className="text-[10px] uppercase tracking-widest opacity-60">↓</span>
+                    <div className="h-[2px] w-12 bg-current opacity-40" />
                   </div>
-                  <p className={`text-5xl font-black leading-none tracking-tight font-display ${themeCfg.accent === "bg-yellow-400" ? "text-yellow-300" : themeCfg.accent === "bg-orange-400" ? "text-orange-300" : themeCfg.accent === "bg-yellow-300" ? "text-yellow-200" : themeCfg.accent === "bg-amber-400" ? "text-amber-300" : "text-slate-900"} drop-shadow-md`}>
+                  <p className={`text-5xl font-black leading-none tracking-tight font-display ${themeCfg.ctaSubhead} drop-shadow-md`}>
                     {subhead}
                   </p>
-                  <p className="text-sm mt-4 opacity-90 max-w-xs mx-auto leading-relaxed">
+                  <p className="text-sm mt-5 opacity-90 max-w-xs mx-auto leading-relaxed">
                     {offerText}
                   </p>
                 </div>
 
-                {/* Vehicle info chip */}
+                {/* Vehicle chip */}
                 {(vehicle.year || vehicle.make || vehicle.model) && (
                   <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 my-4 text-center">
                     <p className="text-xs uppercase tracking-wider opacity-70 mb-1">You're sitting in</p>
@@ -302,10 +453,10 @@ const TradeUpSticker = () => {
                 {/* CTA with QR code */}
                 <div className="bg-white rounded-lg p-4 flex items-center gap-4">
                   <div className="flex-1">
-                    <p className={`text-xs font-bold uppercase tracking-wider ${theme === "gold" ? "text-slate-900" : "text-slate-700"}`}>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-700">
                       Scan to get your
                     </p>
-                    <p className={`text-xl font-black tracking-tight ${theme === "gold" ? "text-slate-900" : "text-slate-900"}`}>
+                    <p className="text-xl font-black tracking-tight text-slate-900">
                       Instant Trade Value
                     </p>
                     <p className="text-[10px] text-slate-500 mt-1">
@@ -313,13 +464,13 @@ const TradeUpSticker = () => {
                     </p>
                   </div>
                   <div className="bg-white p-1 rounded">
-                    <QRCodeSVG value={website} size={88} level="M" />
+                    <QRCodeSVG value={qrUrl} size={88} level="M" />
                   </div>
                 </div>
 
                 {/* Footer */}
                 <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-[10px] opacity-70">
-                  <span>{website.replace(/^https?:\/\//, "")}</span>
+                  <span className="truncate max-w-[50%]">{qrUrl.replace(/^https?:\/\//, "").split("?")[0]}</span>
                   <span>Limited Time Offer</span>
                 </div>
               </div>
@@ -347,6 +498,43 @@ const ConfigCard = ({
     </div>
     {children}
   </div>
+);
+
+const Field = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
+  <div>
+    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{label}</label>
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
+    />
+  </div>
+);
+
+const LogoOption = ({
+  active,
+  onClick,
+  label,
+  hasLogo,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  hasLogo: boolean;
+}) => (
+  <button
+    onClick={onClick}
+    className={`h-10 px-3 rounded-md text-xs font-medium border-2 transition-all flex items-center justify-between ${
+      active ? "border-primary bg-primary/5 text-primary" : "border-border bg-card hover:bg-muted text-foreground"
+    }`}
+  >
+    <span>{label}</span>
+    {hasLogo ? (
+      <Check className="w-3 h-3 text-emerald-600" />
+    ) : (
+      <X className="w-3 h-3 text-muted-foreground" />
+    )}
+  </button>
 );
 
 export default TradeUpSticker;

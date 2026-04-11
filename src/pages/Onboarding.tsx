@@ -76,6 +76,7 @@ const Onboarding = () => {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardingData>(INITIAL);
   const [scrapeSuccess, setScrapeSuccess] = useState(false);
+  const [scrapePreview, setScrapePreview] = useState<Awaited<ReturnType<typeof scrapeDealer>> | null>(null);
 
   // If running embedded, onboarding doesn't apply
   if (isEmbedded) {
@@ -93,21 +94,33 @@ const Onboarding = () => {
     if (!data.websiteUrl.trim()) return;
     const result = await scrapeDealer(data.websiteUrl);
     if (result) {
-      setData(prev => ({
-        ...prev,
-        dealerName: result.name || prev.dealerName,
-        tagline: result.tagline || prev.tagline,
-        logoUrl: result.logo_url || prev.logoUrl,
-        address: result.address || prev.address,
-        city: result.city || prev.city,
-        state: result.state || prev.state,
-        zip: result.zip || prev.zip,
-        phone: result.phone || prev.phone,
-        email: result.email || prev.email,
-      }));
+      setScrapePreview(result);
       setScrapeSuccess(true);
-      toast.success("Website data imported");
+      toast.success("Website scraped — review the preview below");
     }
+  };
+
+  const handleApplyScrape = () => {
+    if (!scrapePreview) return;
+    setData(prev => ({
+      ...prev,
+      dealerName: scrapePreview.name || prev.dealerName,
+      tagline: scrapePreview.tagline || prev.tagline,
+      logoUrl: scrapePreview.logo_url || prev.logoUrl,
+      address: scrapePreview.address || prev.address,
+      city: scrapePreview.city || prev.city,
+      state: scrapePreview.state || prev.state,
+      zip: scrapePreview.zip || prev.zip,
+      phone: scrapePreview.phone || prev.phone,
+      email: scrapePreview.email || prev.email,
+    }));
+    toast.success("Applied to dealership profile");
+    next();
+  };
+
+  const handleDiscardScrape = () => {
+    setScrapePreview(null);
+    setScrapeSuccess(false);
   };
 
   const next = () => setStep(Math.min(step + 1, TOTAL_STEPS));
@@ -233,15 +246,106 @@ const Onboarding = () => {
                 {scraping ? "Scraping..." : scrapeSuccess ? "Re-scrape" : "Scrape & Preview"}
               </button>
               {scrapeError && (
-                <p className="mt-2 text-xs text-destructive">{scrapeError}</p>
-              )}
-              {scrapeSuccess && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 rounded-md px-3 py-2">
-                  <Check className="w-3.5 h-3.5" />
-                  Found: {data.dealerName || "dealership info"}
+                <div className="mt-2 text-xs text-destructive bg-destructive/5 rounded-md px-3 py-2">
+                  {scrapeError}
                 </div>
               )}
             </Section>
+
+            {/* Scrape preview card — review before applying */}
+            {scrapePreview && (
+              <div className="bg-white rounded-xl border-2 border-emerald-300 shadow-premium overflow-hidden">
+                <div className="bg-emerald-50 border-b border-emerald-200 px-5 py-3 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Check className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-emerald-900">Scraped Successfully</p>
+                    <p className="text-xs text-emerald-700">Review what we found. Apply to populate the onboarding form.</p>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <PreviewField label="Dealer Name" value={scrapePreview.name} />
+                    <PreviewField label="Phone" value={scrapePreview.phone} />
+                    <PreviewField label="Email" value={scrapePreview.email} />
+                    <PreviewField label="Address" value={scrapePreview.address} />
+                    <PreviewField label="City" value={scrapePreview.city} />
+                    <PreviewField label="State" value={scrapePreview.state} />
+                    <PreviewField label="ZIP" value={scrapePreview.zip} />
+                    <PreviewField label="Website" value={scrapePreview.website} />
+                  </div>
+
+                  {scrapePreview.tagline && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tagline</p>
+                      <p className="text-sm text-foreground italic">"{scrapePreview.tagline}"</p>
+                    </div>
+                  )}
+
+                  {scrapePreview.logo_url && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Logo</p>
+                      <div className="inline-block p-3 bg-muted rounded-md">
+                        <img src={scrapePreview.logo_url} alt="Logo" className="h-12 object-contain" />
+                      </div>
+                    </div>
+                  )}
+
+                  {scrapePreview.oem_brands.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                        OEM Brands Detected ({scrapePreview.oem_brands.length})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {scrapePreview.oem_brands.map(brand => (
+                          <span
+                            key={brand}
+                            className="text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded"
+                          >
+                            {brand}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {scrapePreview.value_propositions.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                        Value Propositions
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {scrapePreview.value_propositions.map((v, i) => (
+                          <span
+                            key={i}
+                            className="text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded"
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-border">
+                    <button
+                      onClick={handleApplyScrape}
+                      className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+                    >
+                      <Check className="w-4 h-4" />
+                      Apply & Continue
+                    </button>
+                    <button
+                      onClick={handleDiscardScrape}
+                      className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md border border-border bg-card text-sm font-medium hover:bg-muted"
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground bg-white rounded-lg border border-border px-4 py-3">
               <span>Prefer to enter details manually?</span>
@@ -599,6 +703,15 @@ const SelectionCard = ({
       <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
     )}
   </button>
+);
+
+const PreviewField = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+    <p className="text-sm text-foreground font-medium truncate">
+      {value || <span className="text-muted-foreground italic font-normal">Not found</span>}
+    </p>
+  </div>
 );
 
 const PlanCard = ({
