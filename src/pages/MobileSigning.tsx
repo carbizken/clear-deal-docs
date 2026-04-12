@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/addendum/SignaturePad";
+import { useEmailDistribution } from "@/hooks/useEmailDistribution";
+import { useReviewRequest } from "@/hooks/useReviewRequest";
 import { toast } from "sonner";
 
 interface ProductSnapshot {
@@ -28,6 +30,8 @@ const MobileSigning = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerSig, setCustomerSig] = useState({ data: "", type: "draw" as "draw" | "type" });
   const [bulkInitials, setBulkInitials] = useState("");
+  const { sendPacket } = useEmailDistribution();
+  const { queueReviewRequest } = useReviewRequest();
 
   // FTC Buyers Guide warranty acknowledgment
   const [warrantyAck, setWarrantyAck] = useState(false);

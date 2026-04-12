@@ -7,6 +7,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useAudit } from "@/contexts/AuditContext";
 import { useGpsTracking } from "@/hooks/useGpsTracking";
+import { usePhotoCapture } from "@/hooks/usePhotoCapture";
+import { useVideoWalkaround } from "@/hooks/useVideoWalkaround";
+import { useDealJacket } from "@/hooks/useDealJacket";
 import { toast } from "sonner";
 import {
   ScanLine,
@@ -32,6 +35,9 @@ const ScanPage = () => {
   const { fetchFactoryData, loading: factoryLoading, error: factoryError } = useFactoryData();
   const { queue, addToQueue } = useVinQueue();
   const { pinLocation } = useGpsTracking();
+  const { addPhoto } = usePhotoCapture();
+  const { addVideo } = useVideoWalkaround();
+  const { createJacket } = useDealJacket();
 
   const vinRef = useRef<HTMLInputElement>(null);
   const [vin, setVin] = useState("");

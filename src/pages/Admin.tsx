@@ -17,6 +17,11 @@ import { useGetReady } from "@/hooks/useGetReady";
 import { useInventory } from "@/hooks/useInventory";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useWarranty } from "@/hooks/useWarranty";
+import { useSyndicationFeed } from "@/hooks/useSyndicationFeed";
+import { useServiceSticker } from "@/hooks/useServiceSticker";
+import { useDmsFeed } from "@/hooks/useDmsFeed";
+import { useProductLibrary } from "@/hooks/useProductLibrary";
+import { useTradeInLifecycle } from "@/hooks/useTradeInLifecycle";
 import type { VehicleFile as VehicleFileType, StickerType } from "@/types/vehicleFile";
 import {
   Download,
@@ -147,6 +152,13 @@ const Admin = () => {
   const { records: warrantyRecords, getExpiringSoon } = useWarranty(currentStore?.id || "");
   const [csvText, setCsvText] = useState("");
   const expiringSoon = getExpiringSoon(30);
+
+  // Additional integrations
+  const { pushFeed, pushing: syndicating } = useSyndicationFeed();
+  const { stickers: serviceStickers } = useServiceSticker();
+  const { getConfig: getDmsConfig, syncInventory, syncing: dmsSyncing } = useDmsFeed();
+  const { library: productLibrary } = useProductLibrary(currentStore?.id || "");
+  const { getPending: getPendingTradeIns } = useTradeInLifecycle();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
