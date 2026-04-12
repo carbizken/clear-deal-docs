@@ -367,6 +367,50 @@ const BuyersGuide = () => {
             </div>
           </div>
         </div>
+
+        {/* BACK OF BUYERS GUIDE — FTC Required (16 CFR § 455) */}
+        <div className="border-t-4 border-foreground mt-1">
+          <div className="px-4 py-3 bg-muted/20">
+            <p className="text-[10px] font-extrabold text-foreground mb-2">IMPORTANT: Refer to this information when you visit the dealer!</p>
+
+            <p className="text-[8px] text-foreground leading-relaxed mb-2">
+              <strong>Contract Cancellation:</strong> Federal law does not provide a "cooling off" period for used car purchases. In some states, once you sign a contract, you may not be able to cancel it. Check with your state's Attorney General's office or consumer protection agency.
+            </p>
+
+            <p className="text-[8px] text-foreground leading-relaxed mb-2">
+              <strong>Vehicle History Reports:</strong> Before you buy a used vehicle, ask the dealer if the vehicle has a history report. This report may contain important information about the vehicle's title, odometer, and damage history.
+            </p>
+
+            <p className="text-[8px] text-foreground leading-relaxed mb-2">
+              <strong>Vehicle Return Policies:</strong> Some dealers may offer a return policy, money-back guarantee, or exchange privilege. Be sure to get any return policy in writing and understand its terms and conditions.
+            </p>
+
+            <p className="text-[8px] text-foreground leading-relaxed mb-2">
+              <strong>Below is a list of some of the major defects that may occur in used motor vehicles:</strong>
+            </p>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[7px] text-foreground mb-2">
+              <div><strong>Frame & Body:</strong> Frame cracks, damage, or repairs; water damage or flood damage</div>
+              <div><strong>Engine:</strong> Oil leaks, excessive oil consumption, unusual noises, poor compression</div>
+              <div><strong>Transmission:</strong> Slipping, rough shifting, unusual noises, fluid leaks</div>
+              <div><strong>Differential:</strong> Excessive noise, fluid leaks</div>
+              <div><strong>Cooling System:</strong> Leaks, overheating, water pump failure</div>
+              <div><strong>Electrical:</strong> Alternator, starter, wiring problems, battery failure</div>
+              <div><strong>Fuel System:</strong> Leaks, fuel pump failure, emission control issues</div>
+              <div><strong>Brakes:</strong> Worn pads/shoes, fluid leaks, brake failure, ABS malfunction</div>
+              <div><strong>Steering:</strong> Excessive play, hard steering, fluid leaks, alignment</div>
+              <div><strong>Suspension:</strong> Worn shocks/struts, broken springs, ball joint failure</div>
+              <div><strong>Tires:</strong> Uneven wear, damage, improper size</div>
+              <div><strong>Exhaust:</strong> Leaks, catalytic converter failure, excessive emissions</div>
+              <div><strong>Air Conditioning:</strong> Inoperative, refrigerant leaks, compressor failure</div>
+              <div><strong>Air Bags:</strong> Inoperative, previously deployed, warning light on</div>
+            </div>
+
+            <p className="text-[7px] text-muted-foreground leading-relaxed">
+              <strong>COMPLAINT PROCEDURE:</strong> If you have a complaint about the vehicle or the conduct of the dealer, contact: your state's Attorney General's office, your state's motor vehicle regulatory agency, the Better Business Bureau (BBB), or the Federal Trade Commission (FTC) at ftc.gov or 1-877-FTC-HELP.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
