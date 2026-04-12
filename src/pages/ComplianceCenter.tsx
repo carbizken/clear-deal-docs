@@ -178,6 +178,243 @@ const ComplianceCenter = () => {
       </Section>
 
       {/* Section 6: Dealer legal sign-off */}
+      {/* FTC Buyers Guide Rules */}
+      <Section icon={FileText} title="FTC Buyers Guide — The Rules" id="buyers-guide-rules">
+        <SubSection title="What the Law Requires">
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            Under <strong>16 CFR § 455</strong> (the FTC Used Car Rule), every dealer selling 5 or more used
+            vehicles in a 12-month period must display a Buyers Guide on every used vehicle offered for sale.
+            This applies to vehicles on your lot, consignment vehicles, off-site sales events, and auctions open to consumers.
+          </p>
+          <div className="space-y-2">
+            <Requirement req="Must be displayed on EVERY used vehicle (GVWR under 8,500 lbs, curb weight under 6,000 lbs)" status="built" />
+            <Requirement req="Must show: year, make, model, VIN, and mileage at time of sale" status="built" />
+            <Requirement req="Must disclose warranty status: As-Is, Implied Warranties Only, or Dealer Warranty" status="built" />
+            <Requirement req='Must include: "Spoken promises are difficult to enforce. Ask the dealer to put all promises in writing."' status="built" />
+            <Requirement req='Must include: "Ask to have this vehicle inspected by your mechanic either on or off the lot."' status="built" />
+            <Requirement req="Must list major mechanical and electrical systems and potential problems" status="built" />
+            <Requirement req="Must disclose service contract availability" status="built" />
+            <Requirement req="Spanish version required if negotiation is conducted in Spanish" status="built" />
+          </div>
+        </SubSection>
+
+        <SubSection title="Can You Print Your Own?">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
+            <p className="text-xs text-emerald-900 font-medium">
+              <strong>YES.</strong> The FTC does NOT require you to use their official printed form.
+              You can generate your own Buyers Guide on a computer, print it yourself, or get it from
+              any supplier — as long as you match the EXACT specifications.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            This platform generates FTC-compliant Buyers Guides that match all requirements.
+            However, you must ensure:
+          </p>
+          <div className="space-y-2">
+            <Requirement req="100% black ink on white stock (no colored ink for the form itself)" status="built" />
+            <Requirement req="Minimum size: 11 inches high × 7¼ inches wide" status="built" />
+            <Requirement req="Exact wording as specified in 16 CFR § 455 appendix figures" status="built" />
+            <Requirement req="Exact type style and type sizes as shown in the FTC model" status="built" />
+            <Requirement req="Exact format and layout matching the FTC model" status="built" />
+            <Requirement req="NO logos, dealer branding, or other symbols anywhere on the form" status="built" />
+            <Requirement req="Both sides must be readable when displayed" status="built" />
+          </div>
+        </SubSection>
+
+        <SubSection title="Penalties">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-xs text-red-900 font-medium">
+              <strong>$16,000 per violation.</strong> Each vehicle without a proper Buyers Guide is a separate violation.
+              A lot with 50 cars missing guides could face $800,000 in fines.
+            </p>
+          </div>
+        </SubSection>
+
+        <SubSection title="Contract Integration">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The FTC requires the following clause in every sales contract: <em>"The information you see
+            on the window form for this vehicle is part of this contract. Information on the window form
+            overrides any contrary provisions in the contract of sale."</em> This platform automatically
+            generates this clause for inclusion in your deal jacket.
+          </p>
+        </SubSection>
+      </Section>
+
+      {/* Pricing Format Rules */}
+      <Section icon={Scale} title="Pricing Format — New vs. Used" id="pricing-rules">
+        <SubSection title="New Car Addendum Pricing">
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            The factory Monroney sticker (required by the Automobile Information Disclosure Act of 1958)
+            must remain on the vehicle until sold. Federal law prohibits removing or modifying it.
+            Your dealer addendum is a SEPARATE document that sits alongside the Monroney.
+          </p>
+          <div className="bg-card rounded-lg border border-border p-3 font-mono text-xs space-y-1">
+            <div className="flex justify-between"><span>Manufacturer's Suggested Retail Price (MSRP)</span><span>$32,500.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Paint Protection Film</span><span>$995.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Ceramic Coating</span><span>$799.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Window Tint</span><span>$399.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Documentation Fee</span><span>$499.00</span></div>
+            <div className="flex justify-between border-t-2 border-foreground pt-1 font-bold"><span>TOTAL SUGGESTED RETAIL PRICE</span><span>$35,192.00</span></div>
+          </div>
+        </SubSection>
+
+        <SubSection title="Used Car Addendum Pricing">
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            Used vehicles start with market value (not MSRP). Accessories are added to the market value.
+            The total reflects what the customer will pay for the vehicle with all dealer additions.
+          </p>
+          <div className="bg-card rounded-lg border border-border p-3 font-mono text-xs space-y-1">
+            <div className="flex justify-between"><span>Market Value</span><span>$18,900.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Paint Protection Film</span><span>$995.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Theft Deterrent System</span><span>$499.00</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Documentation Fee</span><span>$499.00</span></div>
+            <div className="flex justify-between border-t-2 border-foreground pt-1 font-bold"><span>TOTAL PRICE</span><span>$20,893.00</span></div>
+          </div>
+        </SubSection>
+      </Section>
+
+      {/* FTC March 2026 Warning Letters */}
+      <Section icon={AlertTriangle} title="FTC Warning Letters — March 2026" id="ftc-warnings">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-bold text-amber-900">97 Dealer Groups Warned by the FTC</h3>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                On March 13, 2026, even after the federal CARS Rule was vacated by the Fifth Circuit,
+                the FTC sent warning letters to 97 auto dealership groups across the United States
+                regarding their advertising and pricing practices.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <SubSection title="What the FTC Said">
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            The FTC demanded that <strong>advertised vehicle prices reflect the total price consumers
+            are actually required to pay</strong>. The letters specifically called out:
+          </p>
+          <div className="space-y-2 mb-3">
+            <Requirement req="Advertising prices that exclude mandatory fees" status="info" />
+            <Requirement req="Requiring add-ons not disclosed in advertising" status="info" />
+            <Requirement req="Conditioning advertised prices on dealer financing" status="info" />
+            <Requirement req="Charging for add-ons without express, informed consent" status="info" />
+            <Requirement req="Adding nitrogen tires, VIN etch, paint protection without clear disclosure" status="info" />
+          </div>
+        </SubSection>
+
+        <SubSection title="Why This Matters Even Though the CARS Rule Was Repealed">
+          <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+            The CARS Rule was vacated in January 2025 — but the FTC's authority under <strong>Section 5
+            of the FTC Act</strong> (prohibiting unfair or deceptive practices) was NOT affected. The March 2026
+            letters prove the FTC is actively using Section 5 to enforce the same principles the CARS Rule
+            would have codified.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+            Additionally, states are filling the gap with their own laws. California's CARS Act (SB 766)
+            takes effect October 1, 2026 with even stricter requirements than the federal CARS Rule
+            would have imposed.
+          </p>
+          <p className="text-xs text-foreground font-semibold leading-relaxed">
+            This is exactly why this platform exists. Whether the requirement comes from federal law,
+            state law, or FTC enforcement guidance — your addendums are compliant because we build
+            compliance into every document automatically.
+          </p>
+        </SubSection>
+
+        <SubSection title="Recent Enforcement Settlements">
+          <div className="space-y-3">
+            <EnforcementCase amount="$78,000,000" parties="FTC + Maryland AG v. Dealer Group" date="April 2026" desc="Systematic deceptive pricing and add-on practices. Largest FTC auto retail settlement in history." />
+            <EnforcementCase amount="$20,000,000" parties="FTC + Illinois AG v. Major Dealer" date="December 2024" desc="Deceptive practices in car sales, financing, and product add-ons." />
+            <EnforcementCase amount="$2,600,000" parties="FTC + Arizona AG v. Coulter Motor" date="August 2024" desc="Unauthorized nitrogen, tint, etch, paint coating add-ons. Discriminatory pricing to Latino customers." />
+            <EnforcementCase amount="$136,000" parties="NJ AG v. Sansone Hyundai" date="September 2024" desc='Charging for aftermarket items listed at "no charge" on contracts.' />
+          </div>
+        </SubSection>
+      </Section>
+
+      {/* Connecticut-specific K-208 */}
+      {(dealerState === "CT" || !dealerState) && (
+        <Section icon={ShieldCheck} title="Connecticut: Form K-208 Safety Inspection" id="ct-k208">
+          <SubSection title="Mandatory for Every Used Vehicle Sale">
+            <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+              Under <strong>CGS 14-62(g)</strong>, every Connecticut licensed dealer must complete a safety
+              inspection on every used motor vehicle before offering it for retail sale. The inspection
+              must be documented on <strong>Form K-208</strong> (CT Licensed Dealer Vehicle Inspection Form).
+            </p>
+            <div className="space-y-2 mb-3">
+              <Requirement req="Inspection must be performed BEFORE offering the vehicle for sale" status="built" />
+              <Requirement req="Form K-208 must be completed with all inspection items checked" status="built" />
+              <Requirement req="Inspector (service manager) must sign the certification" status="built" />
+              <Requirement req="Customer must receive a copy of the completed form" status="built" />
+              <Requirement req="Dealer must retain a copy in the deal file" status="built" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-red-700">$500</p>
+                <p className="text-[10px] text-red-600 font-medium mt-1">Fine for NOT performing the safety inspection</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-amber-700">$250</p>
+                <p className="text-[10px] text-amber-600 font-medium mt-1">Fine for NOT providing customer copy</p>
+              </div>
+            </div>
+          </SubSection>
+
+          <SubSection title="What's Inspected (13 Categories, 60+ Items)">
+            <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+              The K-208 covers a comprehensive safety inspection including:
+            </p>
+            <div className="grid grid-cols-2 gap-1 text-[10px] text-foreground">
+              {["Service Brakes", "Parking Brake", "Steering System", "Tires & Wheels",
+                "Lights & Signals", "Horn & Mirrors", "Windshield & Wipers", "Exhaust System",
+                "Suspension", "Body & Frame", "Safety Equipment", "Fluid Levels & Leaks", "Emissions"
+              ].map(cat => (
+                <div key={cat} className="flex items-center gap-1.5 py-0.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                  <span>{cat}</span>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+        </Section>
+      )}
+
+      {/* Window Sticker vs. Addendum */}
+      <Section icon={FileText} title="Window Sticker vs. Signing Addendum" id="sticker-vs-addendum">
+        <SubSection title="What Goes Where">
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            The financing impact disclosure, full FTC disclosures, initials, accept/decline, and
+            signatures belong on the <strong>signing addendum</strong> — NOT on the window sticker.
+            The window sticker is the marketing/pricing document. The addendum is the legal sign-off.
+          </p>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs font-bold text-blue-900 mb-2">Window Sticker (On the Car)</p>
+              <div className="space-y-1 text-[10px] text-blue-800">
+                <p>• Dealer logo & branding</p>
+                <p>• Vehicle info + equipment list</p>
+                <p>• Pricing: MSRP or Market Value → accessories → total</p>
+                <p>• QR code linking to signing addendum</p>
+                <p>• NOT: disclosures, signatures, financing impact</p>
+              </div>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <p className="text-xs font-bold text-emerald-900 mb-2">Signing Addendum (At the Desk)</p>
+              <div className="space-y-1 text-[10px] text-emerald-800">
+                <p>• Full FTC + state disclosures</p>
+                <p>• Product initials (every product)</p>
+                <p>• Accept / Decline for optional items</p>
+                <p>• Financing impact over loan life</p>
+                <p>• FTC warranty acknowledgment + mileage</p>
+                <p>• Window sticker match confirmation</p>
+                <p>• Customer + co-buyer + employee signatures</p>
+                <p>• Timestamped, audit-logged, immutable</p>
+              </div>
+            </div>
+          </div>
+        </SubSection>
+      </Section>
+
       <Section icon={Gavel} title="Dealer Legal Adoption Agreement" id="legal">
         <div className="bg-card rounded-xl border-2 border-foreground p-6 space-y-4">
           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -280,6 +517,18 @@ const Requirement = ({ req, status }: { req: string; status: "built" | "info" })
       <span className="text-[9px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded mt-0.5 flex-shrink-0">INFO</span>
     )}
     <p className="text-xs text-foreground">{req}</p>
+  </div>
+);
+
+const EnforcementCase = ({ amount, parties, date, desc }: { amount: string; parties: string; date: string; desc: string }) => (
+  <div className="bg-card rounded-lg border border-border p-3">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-semibold text-foreground">{parties}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">{date} — {desc}</p>
+      </div>
+      <span className="text-sm font-bold text-red-600 tabular-nums flex-shrink-0">{amount}</span>
+    </div>
   </div>
 );
 
