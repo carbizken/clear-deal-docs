@@ -249,17 +249,72 @@ export const useGetReady = (storeId: string) => {
   const getPending = (): GetReadyRecord[] =>
     records.filter(r => r.status !== "inventory");
 
-  // Validate: get-ready complete date must be BEFORE inventory date
-  const validateTimeline = (record: GetReadyRecord): { valid: boolean; message: string } => {
-    if (!record.getReadyCompleteDate || !record.inventoryDate) {
-      return { valid: true, message: "Timeline not yet complete" };
+  // Full timeline validation — the compliance chain
+  // Acquired → Get-Ready Start → Accessories Installed → Get-Ready Complete → Ready for Sale → Addendum Date → Delivery
+  const validateTimeline = (record: GetReadyRecord): { valid: boolean; warnings: string[]; chain: { step: string; date: string; ok: boolean }[] } => {
+    const warnings: string[] = [];
+
+    const acquired = record.acquiredDate ? new Date(record.acquiredDate) : null;
+    const getReadyStart = record.getReadyStartDate ? new Date(record.getReadyStartDate) : null;
+    const getReadyComplete = record.getReadyCompleteDate ? new Date(record.getReadyCompleteDate) : null;
+    const inventory = record.inventoryDate ? new Date(record.inventoryDate) : null;
+
+    // Find earliest and latest accessory install dates
+    const installDates = record.accessoriesToInstall
+      .filter(a => a.installedDate)
+      .map(a => new Date(a.installedDate!));
+    const earliestInstall = installDates.length > 0 ? new Date(Math.min(...installDates.map(d => d.getTime()))) : null;
+    const latestInstall = installDates.length > 0 ? new Date(Math.max(...installDates.map(d => d.getTime()))) : null;
+
+    // Build chain
+    const chain: { step: string; date: string; ok: boolean }[] = [
+      { step: "Vehicle Acquired", date: record.acquiredDate || "Not set", ok: !!acquired },
+      { step: "Get-Ready Started", date: record.getReadyStartDate || "Not set", ok: !!getReadyStart },
+    ];
+
+    if (earliestInstall) {
+      chain.push({ step: "First Accessory Installed", date: earliestInstall.toISOString(), ok: true });
     }
-    if (new Date(record.getReadyCompleteDate) <= new Date(record.inventoryDate)) {
-      return { valid: true, message: "Timeline valid: get-ready completed before inventory date" };
+    if (latestInstall) {
+      chain.push({ step: "Last Accessory Installed", date: latestInstall.toISOString(), ok: true });
     }
+    if (record.inspectionDate) {
+      chain.push({ step: "Safety Inspection", date: record.inspectionDate, ok: true });
+    }
+
+    chain.push({ step: "Get-Ready Complete", date: record.getReadyCompleteDate || "Pending", ok: !!getReadyComplete });
+    chain.push({ step: "Ready for Sale (Inventory)", date: record.inventoryDate || "Pending", ok: !!inventory });
+
+    // Validation rules
+    if (acquired && getReadyStart && getReadyStart < acquired) {
+      warnings.push("Get-ready start date is BEFORE acquisition date.");
+    }
+    if (acquired && earliestInstall && earliestInstall < acquired) {
+      warnings.push("Accessories installed BEFORE vehicle was acquired.");
+    }
+    if (getReadyComplete && inventory && getReadyComplete > inventory) {
+      warnings.push("Get-ready completed AFTER inventory date — accessories may have been installed after vehicle was listed for sale.");
+    }
+    if (latestInstall && inventory && latestInstall > inventory) {
+      warnings.push("Accessories installed AFTER inventory date — this is a compliance risk.");
+    }
+    if (getReadyComplete && !inventory) {
+      // This is fine — waiting to add to inventory
+    }
+    if (inventory && !getReadyComplete) {
+      warnings.push("Vehicle in inventory but get-ready not marked complete.");
+    }
+
+    // Check all accessories are installed before inventory
+    const uninstalled = record.accessoriesToInstall.filter(a => !a.installed);
+    if (inventory && uninstalled.length > 0) {
+      warnings.push(`${uninstalled.length} accessory(ies) not yet installed but vehicle is in inventory: ${uninstalled.map(a => a.productName).join(", ")}`);
+    }
+
     return {
-      valid: false,
-      message: "WARNING: Get-ready completion date is AFTER inventory date. This may indicate accessories were installed after the vehicle was listed for sale.",
+      valid: warnings.length === 0,
+      warnings,
+      chain,
     };
   };
 
