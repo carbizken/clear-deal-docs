@@ -15,6 +15,7 @@ export interface DealerProfile {
   oem_brands: string[];
   value_propositions: string[];
   hours?: string;
+  privacy_policy_url?: string;
   social?: {
     facebook?: string;
     instagram?: string;
@@ -406,5 +407,28 @@ function extractSocialLinks(html: string, profile: DealerProfile) {
     if (profile.social[key]) continue;
     const m = html.match(rx);
     if (m) profile.social[key] = m[1];
+  }
+
+  // Privacy policy URL
+  if (!profile.privacy_policy_url) {
+    const privacyPatterns = [
+      /href\s*=\s*["']([^"']*(?:privacy[-_]?policy|privacy[-_]?notice|privacy)[^"']*)["']/i,
+      /href\s*=\s*["']([^"']*\/privacy[^"']*)["']/i,
+    ];
+    for (const rx of privacyPatterns) {
+      const m = html.match(rx);
+      if (m) {
+        let url = m[1];
+        // Resolve relative URLs
+        if (url && !url.startsWith("http")) {
+          try {
+            const base = new URL(profile.website);
+            url = new URL(url, base.origin).href;
+          } catch { /* */ }
+        }
+        profile.privacy_policy_url = url;
+        break;
+      }
+    }
   }
 }

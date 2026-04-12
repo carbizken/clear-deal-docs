@@ -41,6 +41,10 @@ export interface DealerSettings {
   cars_act_mode: boolean;         // CA CARS Act strict compliance (12pt disclosures, bilingual, 2yr retention)
   retention_years: number;        // Audit log retention policy
   required_languages: string[];   // ISO codes: en, es, zh, tl, vi, ko
+  // Privacy notice (dealer uploads their own)
+  privacy_notice_enabled: boolean;
+  privacy_notice_text: string;     // Plain text version
+  privacy_notice_url: string;      // URL to uploaded PDF
 }
 
 export const DEFAULT_SETTINGS: DealerSettings = {
@@ -78,6 +82,9 @@ export const DEFAULT_SETTINGS: DealerSettings = {
   cars_act_mode: false,
   retention_years: 7,
   required_languages: ["en"],
+  privacy_notice_enabled: false,
+  privacy_notice_text: "",
+  privacy_notice_url: "",
 };
 
 interface DealerSettingsContextType {
