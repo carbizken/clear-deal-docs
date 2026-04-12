@@ -14,6 +14,9 @@ import { useLeads } from "@/hooks/useLeads";
 import { useVinQueue, QueuedVehicle } from "@/hooks/useVinQueue";
 import { useVehicleFiles } from "@/hooks/useVehicleFiles";
 import { useGetReady } from "@/hooks/useGetReady";
+import { useInventory } from "@/hooks/useInventory";
+import { useInvoices } from "@/hooks/useInvoices";
+import { useWarranty } from "@/hooks/useWarranty";
 import type { VehicleFile as VehicleFileType, StickerType } from "@/types/vehicleFile";
 import {
   Download,
@@ -46,7 +49,7 @@ interface Product {
   icon_type?: string;
 }
 
-type AdminTab = "products" | "rules" | "settings" | "branding" | "analytics" | "leads" | "audit" | "queue" | "files" | "getready";
+type AdminTab = "products" | "rules" | "settings" | "branding" | "analytics" | "leads" | "audit" | "queue" | "files" | "getready" | "inventory" | "invoices" | "warranty";
 
 const emptyProduct = {
   name: "",
@@ -95,7 +98,7 @@ const FEATURE_TOGGLES: { key: keyof DealerSettings; label: string; description: 
   { key: "feature_blackbook", label: "Black Book Data", description: "Pull factory equipment and live market data from Black Book (requires API key)" },
 ];
 
-const VALID_TABS: AdminTab[] = ["products", "rules", "settings", "branding", "analytics", "leads", "audit", "queue", "files", "getready"];
+const VALID_TABS: AdminTab[] = ["products", "rules", "settings", "branding", "analytics", "leads", "audit", "queue", "files", "getready", "inventory", "invoices", "warranty"];
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -137,6 +140,13 @@ const Admin = () => {
 
   // Get-Ready tracking
   const { records: getReadyRecords, getPending: getPendingGetReady, validateTimeline } = useGetReady(currentStore?.id || "");
+
+  // Inventory, invoices, warranty
+  const { vehicles: inventoryVehicles, importCsv, deleteVehicle: deleteInvVehicle } = useInventory(currentStore?.id || "");
+  const { invoices, payroll } = useInvoices(currentStore?.id || "");
+  const { records: warrantyRecords, getExpiringSoon } = useWarranty(currentStore?.id || "");
+  const [csvText, setCsvText] = useState("");
+  const expiringSoon = getExpiringSoon(30);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
@@ -243,6 +253,9 @@ const Admin = () => {
     ...(settings.feature_lead_capture ? [{ id: "leads" as const, label: "Leads" }] : []),
     { id: "queue", label: "Print Queue" },
     { id: "getready", label: "Get-Ready" },
+    ...(settings.feature_inventory ? [{ id: "inventory" as const, label: "Inventory" }] : []),
+    ...(settings.feature_invoicing ? [{ id: "invoices" as const, label: "Invoices" }] : []),
+    ...(settings.feature_warranty ? [{ id: "warranty" as const, label: "Warranty" }] : []),
     { id: "files", label: "Vehicle Files" },
     { id: "audit", label: "Audit Log" },
   ];
@@ -1012,6 +1025,117 @@ const Admin = () => {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Inventory Tab ─── */}
+        {tab === "inventory" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Inventory Import</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Import vehicles via CSV. Headers: vin, stock, year, make, model, trim, mileage, condition, color, price</p>
+              </div>
+            </div>
+            <div className="bg-card rounded-xl border border-border shadow-premium p-5">
+              <textarea
+                value={csvText}
+                onChange={e => setCsvText(e.target.value)}
+                placeholder={"vin,stock,year,make,model,trim,mileage,condition,color,price\n1HGCV1F3XRA000000,H12345,2026,Honda,CR-V,EX-L,12,new,White,35494"}
+                rows={6}
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm font-mono outline-none resize-y"
+              />
+              <button
+                onClick={() => {
+                  if (!csvText.trim()) { toast.error("Paste CSV data"); return; }
+                  const result = importCsv(csvText);
+                  toast.success(`Imported ${result.imported} vehicles. ${result.errors.length} errors.`);
+                  if (result.errors.length > 0) result.errors.forEach(e => toast.error(e));
+                  setCsvText("");
+                }}
+                className="mt-3 inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              >Import CSV</button>
+            </div>
+            <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden">
+              <div className="px-5 py-2.5 bg-muted/30 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{inventoryVehicles.length} vehicles</div>
+              {inventoryVehicles.length === 0 ? (
+                <p className="px-5 py-8 text-center text-xs text-muted-foreground">No inventory yet. Import CSV or scan vehicles from the lot.</p>
+              ) : inventoryVehicles.slice(0, 20).map(v => (
+                <div key={v.id} className="px-5 py-3 border-b border-border last:border-0 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{v.year} {v.make} {v.model} {v.trim}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{v.vin} · Stock: {v.stock_number} · {v.mileage.toLocaleString()} mi</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {v.price > 0 && <span className="text-sm font-semibold tabular-nums">${v.price.toLocaleString()}</span>}
+                    <button onClick={() => { deleteInvVehicle(v.id); toast.success("Removed"); }} className="text-xs text-destructive hover:underline">Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Invoices Tab ─── */}
+        {tab === "invoices" && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Installer Invoices</h3>
+            <p className="text-xs text-muted-foreground">Invoices auto-generated from product installations. Payroll entries created automatically.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <StatMini icon={FileText} label="Total Invoices" value={invoices.length} color="text-blue-600" />
+              <StatMini icon={CheckCircle2} label="Payroll Entries" value={payroll.length} color="text-emerald-600" />
+            </div>
+            <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden">
+              {invoices.length === 0 ? (
+                <p className="px-5 py-8 text-center text-xs text-muted-foreground">No invoices yet. Invoices are created when products are installed via the Get-Ready system.</p>
+              ) : invoices.slice(0, 20).map(inv => (
+                <div key={inv.id} className="px-5 py-3 border-b border-border last:border-0 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{inv.vehicle_ymm}</p>
+                    <p className="text-xs text-muted-foreground">Tech: {inv.technician_name} · RO: {inv.ro_number || "—"} · {format(new Date(inv.created_at), "M/d/yy")}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold tabular-nums">${inv.total.toFixed(2)}</p>
+                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${inv.status === "paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{inv.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Warranty Tab ─── */}
+        {tab === "warranty" && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Warranty Tracking</h3>
+            <p className="text-xs text-muted-foreground">Track product warranty registrations and expirations.</p>
+            {expiringSoon.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-xs font-semibold text-amber-800">{expiringSoon.length} warranty(ies) expiring within 30 days</p>
+                {expiringSoon.map(w => (
+                  <p key={w.id} className="text-xs text-amber-700 mt-1">{w.product_name} — {w.vehicle_ymm} ({w.customer_name}) expires {w.warranty_end}</p>
+                ))}
+              </div>
+            )}
+            <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden">
+              <div className="px-5 py-2.5 bg-muted/30 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{warrantyRecords.length} warranties</div>
+              {warrantyRecords.length === 0 ? (
+                <p className="px-5 py-8 text-center text-xs text-muted-foreground">No warranty records yet. Warranties are registered when products with warranty info are installed.</p>
+              ) : warrantyRecords.slice(0, 20).map(w => (
+                <div key={w.id} className="px-5 py-3 border-b border-border last:border-0 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{w.product_name}</p>
+                    <p className="text-xs text-muted-foreground">{w.vehicle_ymm} · {w.customer_name} · {w.provider}</p>
+                    <p className="text-[10px] text-muted-foreground">{w.warranty_start} → {w.warranty_end}</p>
+                  </div>
+                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                    w.status === "active" ? "bg-emerald-50 text-emerald-700" :
+                    w.status === "expired" ? "bg-red-50 text-red-700" :
+                    "bg-muted text-muted-foreground"
+                  }`}>{w.status}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
