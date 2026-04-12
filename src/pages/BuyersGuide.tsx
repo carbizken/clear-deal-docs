@@ -183,8 +183,8 @@ const BuyersGuide = () => {
         )}
       </div>
 
-      {/* Guide Card */}
-      <div ref={cardRef} className="max-w-[8.5in] mx-auto bg-card shadow-lg rounded-lg overflow-hidden border-2 border-foreground">
+      {/* Guide Card — FTC mandates minimum 11" high × 7.25" wide (16 CFR § 455) */}
+      <div ref={cardRef} className="mx-auto bg-card shadow-lg rounded-lg overflow-hidden border-2 border-foreground" style={{ minWidth: "7.25in", minHeight: "11in", maxWidth: "8.5in" }}>
         {/* Header */}
         <div className="bg-foreground text-card text-center py-3 px-4">
           <h1 className="text-2xl font-extrabold tracking-wide font-barlow-condensed uppercase">{L.title}</h1>
