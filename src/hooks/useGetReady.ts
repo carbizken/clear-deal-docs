@@ -2,6 +2,28 @@ import { useState, useEffect } from "react";
 
 export type GetReadyStatus = "pending" | "in_progress" | "inspection" | "detail" | "photo" | "ready" | "inventory";
 
+export type InstallMethod = "internal_ro" | "third_party_check_request";
+
+export interface CheckRequest {
+  id: string;
+  vendorName: string;
+  vendorContact: string;
+  vendorPhone: string;
+  vendorEmail: string;
+  poNumber: string;
+  amount: number;
+  description: string;
+  vehicleVin: string;
+  vehicleYmm: string;
+  stockNumber: string;
+  status: "pending" | "submitted" | "approved" | "paid";
+  submittedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
 export interface GetReadyItem {
   id: string;
   label: string;
@@ -11,6 +33,10 @@ export interface GetReadyItem {
   completedAt?: string;
   completedBy?: string;
   notes?: string;
+  // Install method — dealer chooses per item
+  installMethod?: InstallMethod;
+  roNumber?: string;           // If internal RO
+  checkRequest?: CheckRequest; // If third-party check request
 }
 
 export interface GetReadyRecord {
@@ -246,6 +272,48 @@ export const useGetReady = (storeId: string) => {
   const getByVin = (vin: string): GetReadyRecord | null =>
     records.find(r => r.vin === vin) || null;
 
+  // Set install method for a checklist item
+  const setInstallMethod = (recordId: string, itemId: string, method: InstallMethod, data?: {
+    roNumber?: string;
+    checkRequest?: Omit<CheckRequest, "id" | "createdAt">;
+  }) => {
+    const all = getAll();
+    const record = all.find(r => r.id === recordId);
+    if (!record) return;
+    const item = record.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    item.installMethod = method;
+
+    if (method === "internal_ro" && data?.roNumber) {
+      item.roNumber = data.roNumber;
+    }
+
+    if (method === "third_party_check_request" && data?.checkRequest) {
+      item.checkRequest = {
+        ...data.checkRequest,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    record.updatedAt = new Date().toISOString();
+    persist(all);
+  };
+
+  // Get all pending check requests across all get-ready records
+  const getPendingCheckRequests = (): { record: GetReadyRecord; item: GetReadyItem; checkRequest: CheckRequest }[] => {
+    const results: { record: GetReadyRecord; item: GetReadyItem; checkRequest: CheckRequest }[] = [];
+    for (const record of records) {
+      for (const item of record.items) {
+        if (item.checkRequest && item.checkRequest.status !== "paid") {
+          results.push({ record, item, checkRequest: item.checkRequest });
+        }
+      }
+    }
+    return results;
+  };
+
   const getPending = (): GetReadyRecord[] =>
     records.filter(r => r.status !== "inventory");
 
@@ -327,6 +395,8 @@ export const useGetReady = (storeId: string) => {
     markAccessoryInstalled,
     getByVin,
     getPending,
+    setInstallMethod,
+    getPendingCheckRequests,
     validateTimeline,
   };
 };
