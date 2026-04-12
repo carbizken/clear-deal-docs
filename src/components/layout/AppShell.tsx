@@ -30,6 +30,7 @@ import {
   ScanLine,
   Printer,
   BookOpen,
+  Car,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -90,6 +91,7 @@ const AppShell = ({ children }: AppShellProps) => {
         { label: "New Addendum", path: "/", icon: FileText },
         { label: "Saved Addendums", path: "/saved", icon: FolderOpen },
         { label: "Buyers Guide", path: "/buyers-guide", icon: ScrollText, featureKey: "feature_buyers_guide" },
+        { label: "Used Car Sticker", path: "/used-car-sticker", icon: Car },
         { label: "Trade-Up Sticker", path: "/trade-up", icon: TrendingUp },
         { label: "Print Queue", path: "/admin?tab=queue", icon: Printer },
       ],
