@@ -24,6 +24,7 @@ import CustomerInfoSection, { CustomerInfo, emptyCustomerInfo } from "@/componen
 import { ScrapedVehicle } from "@/hooks/useVehicleUrlScrape";
 import { useAudit } from "@/contexts/AuditContext";
 import { useTenant } from "@/contexts/TenantContext";
+import { useVehicleFiles } from "@/hooks/useVehicleFiles";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Save, Send, Printer, Download } from "lucide-react";
 
@@ -46,6 +47,7 @@ const Index = () => {
   const { rules, getMatchingProducts } = useProductRules();
   const { log } = useAudit();
   const { currentStore } = useTenant();
+  const { getOrCreateFile, registerSticker } = useVehicleFiles(currentStore?.id || "");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const viewId = searchParams.get("id");
@@ -345,6 +347,30 @@ const Index = () => {
     } else {
       toast.success("Addendum saved!");
       log({ store_id: currentStore?.id || "", user_id: user.id, action: "addendum_created", entity_type: "addendum", entity_id: vehicle.vin, details: { ymm: vehicle.ymm, vin: vehicle.vin, status: payload.status, products_count: displayProducts.length, installed_total: installedTotal, optional_total: optionalTotal, type_overrides: typeOverrides } });
+
+      // Register in vehicle file system — creates per-VIN compliance record + sticker tracking code
+      if (vehicle.vin.trim().length === 17) {
+        const ymmParts = vehicle.ymm.split(" ");
+        const file = getOrCreateFile({
+          vin: vehicle.vin.trim().toUpperCase(),
+          year: vehicleContext.year || ymmParts[0] || "",
+          make: vehicleContext.make || ymmParts[1] || "",
+          model: vehicleContext.model || ymmParts.slice(2).join(" ") || "",
+          trim: vehicleContext.trim || "",
+          stock_number: vehicle.stock,
+          condition: "used",
+          mileage: 0,
+          created_by: user.id,
+        });
+        registerSticker(file.id, "used_car_addendum", {
+          paper_size: settings.addendum_paper_size,
+          products_snapshot: displayProducts,
+          base_price: installedTotal,
+          accessories_total: optionalTotal,
+          doc_fee: docFeeAmount,
+          printed_by: user.id,
+        });
+      }
     }
   };
 
