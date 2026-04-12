@@ -29,6 +29,12 @@ const MobileSigning = () => {
   const [customerSig, setCustomerSig] = useState({ data: "", type: "draw" as "draw" | "type" });
   const [bulkInitials, setBulkInitials] = useState("");
 
+  // FTC Buyers Guide warranty acknowledgment
+  const [warrantyAck, setWarrantyAck] = useState(false);
+  const [deliveryMileage, setDeliveryMileage] = useState("");
+  // Addendum/sticker matching acknowledgment
+  const [stickerMatchAck, setStickerMatchAck] = useState(false);
+
   useEffect(() => {
     if (!token) return;
     loadAddendum();
@@ -73,6 +79,18 @@ const MobileSigning = () => {
     const missingSelections = optional.filter((p) => !optionalSelections[p.id]);
     if (missingSelections.length > 0) {
       toast.error(`Please accept or decline all optional products.`);
+      return;
+    }
+    if (!warrantyAck) {
+      toast.error("Please acknowledge the warranty status.");
+      return;
+    }
+    if (!deliveryMileage.trim()) {
+      toast.error("Please confirm mileage at delivery.");
+      return;
+    }
+    if (!stickerMatchAck) {
+      toast.error("Please acknowledge the window sticker matches this addendum.");
       return;
     }
     if (!customerSig.data) {
@@ -227,6 +245,80 @@ const MobileSigning = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* FTC Warranty Acknowledgment + Mileage at Delivery */}
+        <div className="bg-card rounded-xl p-5 shadow-sm space-y-4">
+          <h2 className="text-sm font-bold font-barlow-condensed text-foreground">FTC Warranty Acknowledgment</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Federal law requires that you acknowledge the warranty status of this vehicle as disclosed
+            on the FTC Buyers Guide displayed on the vehicle, and confirm the odometer mileage at delivery.
+          </p>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Mileage at Time of Delivery
+            </label>
+            <input
+              value={deliveryMileage}
+              onChange={(e) => setDeliveryMileage(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="e.g. 45230"
+              inputMode="numeric"
+              className={`w-full h-12 border-2 rounded-lg px-4 text-base font-bold text-center bg-background text-foreground ${deliveryMileage.trim() ? "border-teal" : "border-action"}`}
+            />
+            {deliveryMileage && (
+              <p className="text-xs text-muted-foreground mt-1 text-center">
+                {parseInt(deliveryMileage).toLocaleString()} miles
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => setWarrantyAck(!warrantyAck)}
+            className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+              warrantyAck ? "border-teal bg-teal/5" : "border-border"
+            }`}
+          >
+            <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+              warrantyAck ? "border-teal bg-teal text-white" : "border-border"
+            }`}>
+              {warrantyAck && <span className="text-sm font-bold">✓</span>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">I acknowledge the warranty status</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                I have reviewed the FTC Buyers Guide on this vehicle. I understand the warranty
+                status (As-Is, Implied, or Warranty) as disclosed. I confirm the mileage reading
+                above is accurate at the time of delivery.
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {/* Window Sticker / Addendum Match Acknowledgment */}
+        <div className="bg-card rounded-xl p-5 shadow-sm space-y-4">
+          <h2 className="text-sm font-bold font-barlow-condensed text-foreground">Addendum Acknowledgment</h2>
+          <button
+            onClick={() => setStickerMatchAck(!stickerMatchAck)}
+            className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+              stickerMatchAck ? "border-teal bg-teal/5" : "border-border"
+            }`}
+          >
+            <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+              stickerMatchAck ? "border-teal bg-teal text-white" : "border-border"
+            }`}>
+              {stickerMatchAck && <span className="text-sm font-bold">✓</span>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">I confirm the sticker matches this addendum</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                I acknowledge that: (1) this addendum matches the window sticker on the vehicle;
+                (2) I have been given time to review both documents; (3) my initials and signature
+                below constitute acceptance of the products and pricing as disclosed; (4) I understand
+                that optional items can be declined with no impact on my purchase or financing.
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Signature */}
