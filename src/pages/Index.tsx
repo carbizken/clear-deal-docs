@@ -13,6 +13,7 @@ import ProductRow from "@/components/addendum/ProductRow";
 import TotalBar from "@/components/addendum/TotalBar";
 import SelectionRecord from "@/components/addendum/SelectionRecord";
 import Disclosures from "@/components/addendum/Disclosures";
+import FinancingImpact from "@/components/addendum/FinancingImpact";
 import SignaturePad from "@/components/addendum/SignaturePad";
 import AddendumFooter from "@/components/addendum/AddendumFooter";
 import QRCodeModal from "@/components/addendum/QRCodeModal";
@@ -543,6 +544,7 @@ const Index = () => {
             installedStartNum={1}
             inkSaving={inkSaving}
           />
+          <FinancingImpact addOnTotal={grandTotal} inkSaving={inkSaving} />
           <Disclosures inkSaving={inkSaving} />
 
           {/* Signing QR Barcode — printed on every addendum for remote signing */}
