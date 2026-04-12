@@ -29,7 +29,9 @@ import {
   TrendingUp,
   ScanLine,
   Printer,
+  BookOpen,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
@@ -70,6 +72,7 @@ const AppShell = ({ children }: AppShellProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showMobileQr, setShowMobileQr] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     workspace: true,
@@ -108,6 +111,7 @@ const AppShell = ({ children }: AppShellProps) => {
         { label: "Analytics", path: "/admin?tab=analytics", icon: BarChart3, featureKey: "feature_analytics" },
         { label: "Leads", path: "/admin?tab=leads", icon: Users, featureKey: "feature_lead_capture" },
         { label: "Vehicle Files", path: "/admin?tab=files", icon: FolderOpen },
+        { label: "Compliance Guide", path: "/compliance", icon: BookOpen },
         { label: "Compliance Log", path: "/admin?tab=audit", icon: ShieldCheck },
       ],
     },
@@ -362,14 +366,14 @@ const AppShell = ({ children }: AppShellProps) => {
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Scan button — launches mobile lot scanner */}
+              {/* Mobile QR launcher — shows QR code for phone scanning */}
               <button
-                onClick={() => navigate("/scan")}
+                onClick={() => setShowMobileQr(true)}
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
-                title="Open lot scanner"
+                title="Open scanner on your phone"
               >
                 <ScanLine className="w-4 h-4" />
-                <span className="hidden md:inline">Scan</span>
+                <span className="hidden md:inline">Mobile</span>
               </button>
 
               {/* Dark mode toggle */}
@@ -475,6 +479,44 @@ const AppShell = ({ children }: AppShellProps) => {
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      {/* Mobile QR Code Modal */}
+      {showMobileQr && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowMobileQr(false)}>
+          <div className="bg-card rounded-2xl p-8 max-w-sm w-full text-center space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <ScanLine className="w-6 h-6 text-primary" />
+            </div>
+            <h2 className="text-lg font-semibold text-foreground">Open Lot Scanner</h2>
+            <p className="text-sm text-muted-foreground">
+              Scan this QR code with your iPhone or iPad to open the mobile vehicle scanner.
+            </p>
+            <div className="flex justify-center py-4">
+              <QRCodeSVG value={`${window.location.origin}/scan`} size={200} level="M" />
+            </div>
+            <p className="text-xs text-muted-foreground break-all font-mono">
+              {window.location.origin}/scan
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/scan`);
+                  alert("Link copied!");
+                }}
+                className="flex-1 h-10 rounded-lg border-2 border-border text-sm font-semibold text-foreground hover:bg-muted"
+              >
+                Copy Link
+              </button>
+              <button
+                onClick={() => setShowMobileQr(false)}
+                className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

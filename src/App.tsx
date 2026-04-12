@@ -23,6 +23,7 @@ import TradeUpSticker from "./pages/TradeUpSticker.tsx";
 import About from "./pages/About.tsx";
 import BrandGuide from "./pages/BrandGuide.tsx";
 import ScanPage from "./pages/ScanPage.tsx";
+import ComplianceCenter from "./pages/ComplianceCenter.tsx";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
                     <Route path="/saved" element={<AppShell><SavedAddendums /></AppShell>} />
                     <Route path="/buyers-guide" element={<AppShell><BuyersGuide /></AppShell>} />
                     <Route path="/trade-up" element={<AppShell><TradeUpSticker /></AppShell>} />
+                    <Route path="/compliance" element={<AppShell><ComplianceCenter /></AppShell>} />
 
                     <Route path="*" element={<NotFound />} />
                   </Routes>

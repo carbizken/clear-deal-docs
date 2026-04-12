@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useVinDecode } from "@/hooks/useVinDecode";
 import { useVehicleUrlScrape, ScrapedVehicle } from "@/hooks/useVehicleUrlScrape";
+import { useBlackBook } from "@/hooks/useBlackBook";
 import { useDealerSettings } from "@/contexts/DealerSettingsContext";
 
 interface VehicleStripProps {
@@ -21,6 +22,7 @@ const fields = [
 const VehicleStrip = ({ vehicle, onChange, onVinDecoded, onVehicleScraped, inkSaving }: VehicleStripProps) => {
   const { decode, decoding, error: vinError } = useVinDecode();
   const { scrape, scraping, error: scrapeError } = useVehicleUrlScrape();
+  const { pull: pullBlackBook, loading: bbLoading, data: bbData, error: bbError } = useBlackBook();
   const { settings } = useDealerSettings();
   const [decoded, setDecoded] = useState(false);
   const [scraped, setScraped] = useState(false);
@@ -130,12 +132,38 @@ const VehicleStrip = ({ vehicle, onChange, onVinDecoded, onVehicleScraped, inkSa
                   {decoding ? "Decoding..." : decoded ? "Decoded" : "Decode VIN"}
                 </button>
               )}
+              {f.key === "vin" && settings.feature_blackbook && vehicle.vin.trim().length === 17 && (
+                <button
+                  onClick={() => pullBlackBook(vehicle.vin.trim())}
+                  disabled={bbLoading}
+                  className="shrink-0 text-[8px] font-bold px-2 py-1 rounded bg-purple-600 text-white hover:opacity-85 disabled:opacity-40 transition-all"
+                >
+                  {bbLoading ? "Pulling..." : bbData ? "Pulled" : "Black Book"}
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
       {vinError && settings.feature_vin_decode && (
         <p className="text-[8px] text-red mt-1">{vinError}</p>
+      )}
+      {bbError && settings.feature_blackbook && (
+        <p className="text-[8px] text-red mt-1">{bbError}</p>
+      )}
+      {bbData && settings.feature_blackbook && (
+        <div className="mt-1 p-1.5 bg-purple-50 border border-purple-200 rounded text-[8px] no-print">
+          <p className="font-bold text-purple-800 mb-0.5">Black Book Data</p>
+          {bbData.baseMsrp && bbData.baseMsrp !== "—" && (
+            <p className="text-purple-700">Base MSRP: ${bbData.baseMsrp}</p>
+          )}
+          {bbData.standardEquipment.length > 0 && (
+            <p className="text-purple-600 mt-0.5">{bbData.standardEquipment.join(" · ")}</p>
+          )}
+          {bbData.baseMsrp === "—" && (
+            <p className="text-purple-600 italic">Connect Black Book API key in Admin &gt; Settings to pull live market data.</p>
+          )}
+        </div>
       )}
       <div className="flex justify-end">
         <span className="inline-block mt-1 text-[8px] font-bold bg-teal text-primary-foreground px-2 py-0.5 rounded-sm tracking-widest">
