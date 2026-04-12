@@ -28,7 +28,9 @@ serve(async (req) => {
       );
     }
 
-    const prompt = `Write a professional, SEO-optimized vehicle description for a car dealership listing. Be factual, confident, and compelling. 2-3 short paragraphs, under 150 words total. Do not use exclamation marks. Do not make claims you can't verify from the data provided.
+    // If the client sends a full prompt_override, use it (SEO Description Writer)
+    // Otherwise use the default short description prompt
+    const prompt = vehicle.prompt_override || `Write a professional, SEO-optimized vehicle description for a car dealership listing. Be factual, confident, and compelling. 2-3 short paragraphs, under 150 words total. Do not use exclamation marks. Do not make claims you can't verify from the data provided.
 
 Vehicle data:
 - Year: ${vehicle.year || "Unknown"}
@@ -56,7 +58,7 @@ Write the description now:`;
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
+        max_tokens: vehicle.prompt_override ? 1500 : 300,
         messages: [{ role: "user", content: prompt }],
       }),
     });

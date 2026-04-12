@@ -30,6 +30,7 @@ const ComplianceCenter = lazy(() => import("./pages/ComplianceCenter"));
 const VehiclePortal = lazy(() => import("./pages/VehiclePortal"));
 const UsedCarSticker = lazy(() => import("./pages/UsedCarSticker"));
 const CpoSheet = lazy(() => import("./pages/CpoSheet"));
+const DescriptionWriter = lazy(() => import("./pages/DescriptionWriter"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
                       <Route path="/used-car-sticker" element={<AppShell><UsedCarSticker /></AppShell>} />
                       <Route path="/cpo-sheet" element={<AppShell><CpoSheet /></AppShell>} />
                       <Route path="/compliance" element={<AppShell><ComplianceCenter /></AppShell>} />
+                    <Route path="/description-writer" element={<AppShell><DescriptionWriter /></AppShell>} />
 
                       <Route path="*" element={<NotFound />} />
                     </Routes>

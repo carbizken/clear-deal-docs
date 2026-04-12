@@ -100,6 +100,7 @@ const AppShell = ({ children }: AppShellProps) => {
         { label: "Buyers Guide", path: "/buyers-guide", icon: ScrollText, featureKey: "feature_buyers_guide" },
         { label: "CPO Info Sheet", path: "/cpo-sheet", icon: Award },
         { label: "Trade-Up Sticker", path: "/trade-up", icon: TrendingUp },
+        { label: "Description Writer", path: "/description-writer", icon: Sparkles },
       ],
     },
     inventory: {
