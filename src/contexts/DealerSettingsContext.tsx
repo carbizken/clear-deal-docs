@@ -28,7 +28,7 @@ export interface DealerSettings {
   feature_ai_descriptions: boolean;
   feature_blackbook: boolean;
   // Addendum sizing & product defaults
-  addendum_paper_size: "letter" | "legal" | "half-sheet" | "custom";
+  addendum_paper_size: "letter" | "legal" | "half-sheet" | "addendum-strip" | "addendum-half" | "monroney" | "custom";
   addendum_custom_width: string;   // inches
   addendum_custom_height: string;  // inches
   product_default_mode: "all_installed" | "all_optional" | "selective";

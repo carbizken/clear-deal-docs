@@ -27,10 +27,14 @@ import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Save, Send, Printer, Download } from "lucide-react";
 
 // Paper size map (width in inches)
+// Paper size widths for the addendum card preview
 const PAPER_WIDTHS: Record<string, string> = {
-  letter: "8.5in",
-  legal: "8.5in",
-  "half-sheet": "5.5in",
+  letter: "8.5in",            // 8.5 × 11
+  legal: "8.5in",             // 8.5 × 14
+  "half-sheet": "5.5in",      // 5.5 × 8.5
+  "addendum-strip": "4.25in", // 4.25 × 11 (standard addendum strip)
+  "addendum-half": "5.5in",   // 5.5 × 12.5 (common half-page addendum)
+  monroney: "7.5in",          // 7.5 × 10 (Monroney sticker format)
   custom: "8.5in",
 };
 

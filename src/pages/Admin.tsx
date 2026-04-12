@@ -2,11 +2,26 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDealerSettings, DealerSettings, DEFAULT_SETTINGS } from "@/contexts/DealerSettingsContext";
 import { useProductRules, ProductRule } from "@/hooks/useProductRules";
+import { useAudit } from "@/contexts/AuditContext";
+import { useTenant } from "@/contexts/TenantContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PRODUCT_ICONS } from "@/components/addendum/ProductRow";
 import { STATE_DOC_FEES } from "@/data/docFees";
+import { format } from "date-fns";
+import { useLeads } from "@/hooks/useLeads";
+import {
+  Download,
+  ShieldCheck,
+  BarChart3,
+  Users,
+  Search,
+  ArrowUpRight,
+  FileText,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 
 interface Product {
   id: string;
@@ -22,7 +37,7 @@ interface Product {
   icon_type?: string;
 }
 
-type AdminTab = "products" | "rules" | "settings" | "branding";
+type AdminTab = "products" | "rules" | "settings" | "branding" | "analytics" | "leads" | "audit";
 
 const emptyProduct = {
   name: "",
@@ -71,13 +86,39 @@ const FEATURE_TOGGLES: { key: keyof DealerSettings; label: string; description: 
   { key: "feature_blackbook", label: "Black Book Data", description: "Pull factory equipment and live market data from Black Book (requires API key)" },
 ];
 
+const VALID_TABS: AdminTab[] = ["products", "rules", "settings", "branding", "analytics", "leads", "audit"];
+
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const { settings, updateSettings } = useDealerSettings();
   const { rules, addRule, updateRule, deleteRule } = useProductRules();
+  const { entries: auditEntries, exportCsv: exportAuditCsv } = useAudit();
+  const { currentStore } = useTenant();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [tab, setTab] = useState<AdminTab>("products");
+  // Read tab from URL ?tab= and keep in sync
+  const urlTab = searchParams.get("tab") as AdminTab | null;
+  const [tab, setTabState] = useState<AdminTab>(
+    urlTab && VALID_TABS.includes(urlTab) ? urlTab : "products"
+  );
+
+  const setTab = (t: AdminTab) => {
+    setTabState(t);
+    setSearchParams({ tab: t }, { replace: true });
+  };
+
+  // Sync tab from URL changes (sidebar links, back/forward)
+  useEffect(() => {
+    const paramTab = searchParams.get("tab") as AdminTab | null;
+    if (paramTab && VALID_TABS.includes(paramTab) && paramTab !== tab) {
+      setTabState(paramTab);
+    }
+  }, [searchParams]);
+
+  // Leads hook for leads tab
+  const { leads, exportCsv: exportLeadsCsv, updateLead } = useLeads(currentStore?.id || "");
+
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
   const [editingRule, setEditingRule] = useState<Partial<ProductRule & { _new?: boolean }> | null>(null);
@@ -176,20 +217,21 @@ const Admin = () => {
 
   const tabs: { id: AdminTab; label: string }[] = [
     { id: "products", label: "Products" },
-    ...(settings.feature_product_rules ? [{ id: "rules" as const, label: "Product Rules" }] : []),
-    { id: "settings", label: "Feature Toggles" },
+    ...(settings.feature_product_rules ? [{ id: "rules" as const, label: "Rules" }] : []),
+    { id: "settings", label: "Settings" },
     { id: "branding", label: "Branding" },
+    ...(settings.feature_analytics ? [{ id: "analytics" as const, label: "Analytics" }] : []),
+    ...(settings.feature_lead_capture ? [{ id: "leads" as const, label: "Leads" }] : []),
+    { id: "audit", label: "Audit Log" },
   ];
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold font-barlow-condensed text-foreground">Admin Panel</h1>
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/")} className="text-xs px-3 py-1.5 rounded bg-action text-primary-foreground">← Back to Addendum</button>
-            <button onClick={signOut} className="text-xs px-3 py-1.5 rounded bg-destructive text-primary-foreground">Sign Out</button>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight font-display text-foreground">Administration</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Manage products, settings, compliance, and analytics for {currentStore?.name || "your store"}</p>
           </div>
         </div>
 
@@ -348,18 +390,23 @@ const Admin = () => {
             {/* Paper Size Settings */}
             <div className="bg-card rounded-lg p-4 shadow-sm mb-3">
               <h4 className="text-sm font-bold text-foreground mb-2">Addendum Paper Size</h4>
-              <p className="text-xs text-muted-foreground mb-3">Window sticker addendum scales to this paper size. (FTC Buyers Guide remains fixed per federal regulation.)</p>
+              <p className="text-xs text-muted-foreground mb-3">Addendum scales to this size. FTC Buyers Guide stays at its federally-mandated minimum (11" × 7¼", 16 CFR § 455).</p>
               <div className="flex gap-2 flex-wrap">
-                {(["letter", "legal", "half-sheet", "custom"] as const).map(size => (
+                {[
+                  { key: "letter" as const, label: "Letter (8.5×11)" },
+                  { key: "legal" as const, label: "Legal (8.5×14)" },
+                  { key: "half-sheet" as const, label: "Half Sheet (5.5×8.5)" },
+                  { key: "addendum-strip" as const, label: "Strip (4.25×11)" },
+                  { key: "addendum-half" as const, label: "Half Page (5.5×12.5)" },
+                  { key: "monroney" as const, label: "Monroney (7.5×10)" },
+                  { key: "custom" as const, label: "Custom" },
+                ].map(({ key, label }) => (
                   <button
-                    key={size}
-                    onClick={() => updateSettings({ addendum_paper_size: size })}
-                    className={`text-xs px-3 py-1.5 rounded border ${settings.addendum_paper_size === size ? "bg-navy text-primary-foreground border-navy" : "bg-card text-foreground border-border-custom"}`}
+                    key={key}
+                    onClick={() => updateSettings({ addendum_paper_size: key })}
+                    className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${settings.addendum_paper_size === key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:bg-muted"}`}
                   >
-                    {size === "letter" && "Letter (8.5×11)"}
-                    {size === "legal" && "Legal (8.5×14)"}
-                    {size === "half-sheet" && "Half Sheet (5.5×8.5)"}
-                    {size === "custom" && "Custom"}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -543,6 +590,205 @@ const Admin = () => {
           </div>
         )}
 
+        {/* ─── Analytics Tab ─── */}
+        {tab === "analytics" && (
+          <div className="space-y-4">
+            <div className="bg-card rounded-xl border border-border shadow-premium p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-semibold text-foreground">Addendum Analytics</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">Performance metrics from your saved addendums.</p>
+            </div>
+
+            {(() => {
+              const allA = auditEntries.filter(e => e.store_id === (currentStore?.id || ""));
+              const created = allA.filter(e => e.action === "addendum_created").length;
+              const sent = allA.filter(e => e.action === "addendum_sent").length;
+              const printed = allA.filter(e => e.action === "addendum_printed").length;
+              const pdfs = allA.filter(e => e.action === "addendum_pdf").length;
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatMini icon={FileText} label="Addendums Created" value={created} color="text-blue-600" />
+                  <StatMini icon={ArrowUpRight} label="Sent to Customer" value={sent} color="text-emerald-600" />
+                  <StatMini icon={Download} label="PDFs Generated" value={pdfs} color="text-purple-600" />
+                  <StatMini icon={CheckCircle2} label="Printed" value={printed} color="text-amber-600" />
+                </div>
+              );
+            })()}
+
+            <div className="bg-card rounded-xl border border-border shadow-premium p-5">
+              <h4 className="text-sm font-semibold text-foreground mb-3">Recent Compliance Events</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {auditEntries
+                  .filter(e => e.store_id === (currentStore?.id || ""))
+                  .slice(-20).reverse()
+                  .map(e => (
+                    <div key={e.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                      <div>
+                        <p className="text-xs font-medium text-foreground capitalize">{e.action.replace(/_/g, " ")}</p>
+                        <p className="text-[10px] text-muted-foreground">{e.entity_type} · {e.entity_id || "—"}</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{format(new Date(e.created_at), "M/d h:mm a")}</span>
+                    </div>
+                  ))}
+                {auditEntries.filter(e => e.store_id === (currentStore?.id || "")).length === 0 && (
+                  <p className="text-xs text-muted-foreground py-6 text-center">No analytics data yet. Create and sign addendums to see metrics.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Leads Tab ─── */}
+        {tab === "leads" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-foreground">Captured Leads</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Leads captured from QR scans and signing links.</p>
+              </div>
+              <button
+                onClick={() => {
+                  const csv = exportLeadsCsv();
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `leads-${currentStore?.name || "export"}-${new Date().toISOString().slice(0, 10)}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success("Leads exported as CSV");
+                }}
+                disabled={leads.length === 0}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors disabled:opacity-40"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden">
+              {leads.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <Users className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground">No leads captured yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Send addendums to customers via QR codes to start capturing leads.</p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/30">
+                    <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <th className="text-left px-4 py-2.5">Date</th>
+                      <th className="text-left py-2.5">Name</th>
+                      <th className="text-left py-2.5">Phone</th>
+                      <th className="text-left py-2.5">Email</th>
+                      <th className="text-left py-2.5">Vehicle</th>
+                      <th className="text-left py-2.5">Source</th>
+                      <th className="text-left py-2.5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leads.map(l => (
+                      <tr key={l.id} className="border-t border-border hover:bg-muted/20">
+                        <td className="px-4 py-2.5 text-xs tabular-nums text-muted-foreground">{format(new Date(l.captured_at), "M/d/yy")}</td>
+                        <td className="py-2.5 text-sm font-medium">{l.name || "—"}</td>
+                        <td className="py-2.5 text-xs text-muted-foreground">{l.phone || "—"}</td>
+                        <td className="py-2.5 text-xs text-muted-foreground">{l.email || "—"}</td>
+                        <td className="py-2.5 text-xs">{l.vehicle_interest || "—"}</td>
+                        <td className="py-2.5"><span className="text-[10px] font-semibold bg-muted px-1.5 py-0.5 rounded">{l.source}</span></td>
+                        <td className="py-2.5">
+                          <select
+                            value={l.status}
+                            onChange={(e) => updateLead(l.id, { status: e.target.value as "new" | "contacted" | "converted" | "lost" })}
+                            className="text-[10px] font-semibold bg-muted border-0 rounded px-1.5 py-0.5 cursor-pointer"
+                          >
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="converted">Converted</option>
+                            <option value="lost">Lost</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Audit Log Tab ─── */}
+        {tab === "audit" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-foreground">Compliance Audit Log</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Immutable record of every action for FTC, CARS Act, and state AG audit compliance.</p>
+              </div>
+              <button
+                onClick={() => {
+                  const csv = exportAuditCsv(currentStore?.id);
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `audit-log-${currentStore?.name || "all"}-${new Date().toISOString().slice(0, 10)}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success("Audit log exported as CSV");
+                }}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden">
+              {auditEntries.filter(e => !currentStore?.id || e.store_id === currentStore.id).length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <ShieldCheck className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground">No audit events yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">All addendum creation, signing, printing, and changes will be logged here automatically.</p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/30">
+                    <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <th className="text-left px-4 py-2.5">Timestamp</th>
+                      <th className="text-left py-2.5">Action</th>
+                      <th className="text-left py-2.5">Entity</th>
+                      <th className="text-left py-2.5">ID</th>
+                      <th className="text-left py-2.5">User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditEntries
+                      .filter(e => !currentStore?.id || e.store_id === currentStore.id)
+                      .slice(-100).reverse()
+                      .map(e => (
+                        <tr key={e.id} className="border-t border-border hover:bg-muted/20">
+                          <td className="px-4 py-2.5 text-xs tabular-nums text-muted-foreground whitespace-nowrap">{format(new Date(e.created_at), "M/d/yy h:mm:ss a")}</td>
+                          <td className="py-2.5"><span className="text-xs font-medium capitalize">{e.action.replace(/_/g, " ")}</span></td>
+                          <td className="py-2.5 text-xs text-muted-foreground">{e.entity_type}</td>
+                          <td className="py-2.5 text-xs font-mono text-muted-foreground truncate max-w-[120px]">{e.entity_id || "—"}</td>
+                          <td className="py-2.5 text-xs text-muted-foreground truncate max-w-[120px]">{e.user_id?.slice(0, 8) || "—"}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ─── Product Edit Modal ─── */}
         {editing && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -718,9 +964,16 @@ const Admin = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };
+
+const StatMini = ({ icon: Icon, label, value, color }: { icon: typeof FileText; label: string; value: number; color: string }) => (
+  <div className="bg-card rounded-xl border border-border shadow-premium p-4">
+    <Icon className={`w-4 h-4 ${color} mb-2`} />
+    <div className="text-2xl font-semibold tracking-tight font-display tabular-nums text-foreground">{value}</div>
+    <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+  </div>
+);
 
 export default Admin;
