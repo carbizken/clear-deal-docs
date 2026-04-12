@@ -5,9 +5,12 @@ import { useVinDecode } from "@/hooks/useVinDecode";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAudit } from "@/contexts/AuditContext";
 import { useProducts } from "@/hooks/useProducts";
+import { useAiDescription } from "@/hooks/useAiDescription";
+import { useGpsTracking } from "@/hooks/useGpsTracking";
+import { useZebraPrint } from "@/hooks/useZebraPrint";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, Download, Car, Fuel, Gauge, Cog } from "lucide-react";
+import { Printer, Download, Car, Fuel, Gauge, Cog, Sparkles, MapPin, Tag } from "lucide-react";
 
 const UsedCarSticker = () => {
   const { settings } = useDealerSettings();
@@ -16,6 +19,9 @@ const UsedCarSticker = () => {
   const { user } = useAuth();
   const { log } = useAudit();
   const { data: products } = useProducts();
+  const { generate: generateAiDesc, generating: aiGenerating } = useAiDescription();
+  const { pinLocation, tracking: gpsTracking } = useGpsTracking();
+  const { printLabel, printing: zebraPrinting } = useZebraPrint();
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -146,6 +152,49 @@ const UsedCarSticker = () => {
               rows={3}
               className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm outline-none resize-y"
             />
+            <button
+              onClick={async () => {
+                const desc = await generateAiDesc(vehicle);
+                if (desc) setVehicle(prev => ({ ...prev, description: desc }));
+              }}
+              disabled={aiGenerating}
+              className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-purple-600 text-white text-xs font-medium hover:opacity-90 disabled:opacity-40"
+            >
+              <Sparkles className="w-3 h-3" />
+              {aiGenerating ? "Writing..." : "AI Generate Description"}
+            </button>
+          </ConfigCard>
+
+          {/* Quick actions */}
+          <ConfigCard title="Quick Actions">
+            <div className="space-y-2">
+              <button
+                onClick={async () => {
+                  if (!vehicle.vin || !user) return;
+                  const loc = await pinLocation(vehicle.vin, user.id);
+                  if (loc) toast.success(`GPS pinned: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`);
+                  else toast.error("Could not get GPS location");
+                }}
+                disabled={gpsTracking || !vehicle.vin}
+                className="w-full inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-xs font-medium hover:bg-muted disabled:opacity-40"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                {gpsTracking ? "Pinning..." : "Pin GPS Location"}
+              </button>
+              <button
+                onClick={async () => {
+                  if (!vehicle.vin || !vehicle.stock) { toast.error("VIN and Stock # required"); return; }
+                  const ymm = `${vehicle.year} ${vehicle.make} ${vehicle.model}`.trim();
+                  await printLabel({ vin: vehicle.vin, stockNumber: vehicle.stock, ymm, labelType: "stock_number" });
+                  toast.success("Stock label queued for Zebra printer");
+                }}
+                disabled={zebraPrinting || !vehicle.stock}
+                className="w-full inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-xs font-medium hover:bg-muted disabled:opacity-40"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                {zebraPrinting ? "Printing..." : "Print Zebra Stock Label"}
+              </button>
+            </div>
           </ConfigCard>
         </div>
 
