@@ -22,6 +22,7 @@ import Onboarding from "./pages/Onboarding.tsx";
 import TradeUpSticker from "./pages/TradeUpSticker.tsx";
 import About from "./pages/About.tsx";
 import BrandGuide from "./pages/BrandGuide.tsx";
+import ScanPage from "./pages/ScanPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
                     <Route path="/login" element={<Login />} />
                     <Route path="/sign/:token" element={<MobileSigning />} />
                     <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/scan" element={<ScanPage />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/brand" element={<BrandGuide />} />
 

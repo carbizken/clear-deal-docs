@@ -11,6 +11,7 @@ import { PRODUCT_ICONS } from "@/components/addendum/ProductRow";
 import { STATE_DOC_FEES } from "@/data/docFees";
 import { format } from "date-fns";
 import { useLeads } from "@/hooks/useLeads";
+import { useVinQueue, QueuedVehicle } from "@/hooks/useVinQueue";
 import {
   Download,
   ShieldCheck,
@@ -21,6 +22,11 @@ import {
   FileText,
   CheckCircle2,
   Clock,
+  ScanLine,
+  Trash2,
+  Printer,
+  RotateCcw,
+  Car,
 } from "lucide-react";
 
 interface Product {
@@ -37,7 +43,7 @@ interface Product {
   icon_type?: string;
 }
 
-type AdminTab = "products" | "rules" | "settings" | "branding" | "analytics" | "leads" | "audit";
+type AdminTab = "products" | "rules" | "settings" | "branding" | "analytics" | "leads" | "audit" | "queue";
 
 const emptyProduct = {
   name: "",
@@ -86,7 +92,7 @@ const FEATURE_TOGGLES: { key: keyof DealerSettings; label: string; description: 
   { key: "feature_blackbook", label: "Black Book Data", description: "Pull factory equipment and live market data from Black Book (requires API key)" },
 ];
 
-const VALID_TABS: AdminTab[] = ["products", "rules", "settings", "branding", "analytics", "leads", "audit"];
+const VALID_TABS: AdminTab[] = ["products", "rules", "settings", "branding", "analytics", "leads", "audit", "queue"];
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -118,6 +124,9 @@ const Admin = () => {
 
   // Leads hook for leads tab
   const { leads, exportCsv: exportLeadsCsv, updateLead } = useLeads(currentStore?.id || "");
+
+  // VIN queue for print queue tab
+  const { queue: vinQueue, updateItem: updateQueueItem, removeItem: removeQueueItem, clearCompleted } = useVinQueue();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
@@ -222,6 +231,7 @@ const Admin = () => {
     { id: "branding", label: "Branding" },
     ...(settings.feature_analytics ? [{ id: "analytics" as const, label: "Analytics" }] : []),
     ...(settings.feature_lead_capture ? [{ id: "leads" as const, label: "Leads" }] : []),
+    { id: "queue", label: "Print Queue" },
     { id: "audit", label: "Audit Log" },
   ];
 
@@ -716,6 +726,148 @@ const Admin = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Print Queue Tab ─── */}
+        {tab === "queue" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ScanLine className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-foreground">Inventory Print Queue</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Vehicles scanned from the lot. Review, customize, and print stickers.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    clearCompleted();
+                    toast.success("Cleared completed items");
+                  }}
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Clear Completed
+                </button>
+                <button
+                  onClick={() => navigate("/scan")}
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+                >
+                  <ScanLine className="w-3.5 h-3.5" />
+                  Scan More
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border shadow-premium overflow-hidden">
+              {vinQueue.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <ScanLine className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground">No vehicles in queue</p>
+                  <p className="text-xs text-muted-foreground mt-1">Go to the lot, open the scanner on your phone, and scan VINs to populate this queue.</p>
+                  <button
+                    onClick={() => navigate("/scan")}
+                    className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+                  >
+                    <ScanLine className="w-3.5 h-3.5" />
+                    Open Scanner
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {/* Queue header */}
+                  <div className="px-5 py-3 bg-muted/30 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>{vinQueue.length} vehicle{vinQueue.length !== 1 ? "s" : ""} in queue</span>
+                    <span>{vinQueue.filter(q => q.status === "queued").length} awaiting print</span>
+                  </div>
+
+                  {vinQueue.map(item => {
+                    const qData = JSON.parse(localStorage.getItem("vin_queue_data") || "{}")[item.id];
+                    const ymm = qData?.decoded?.ymm || `VIN: ${item.vin}`;
+                    const isQueued = item.status === "queued";
+                    const isCompleted = item.status === "completed";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`px-5 py-4 border-b border-border last:border-0 ${isCompleted ? "opacity-50" : ""}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              isCompleted ? "bg-emerald-50" : "bg-muted"
+                            }`}>
+                              {isCompleted ? (
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                              ) : (
+                                <Car className="w-5 h-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">{ymm}</p>
+                              <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                                {item.stock_number && <span>Stock: {item.stock_number}</span>}
+                                {item.mileage && <span>{parseInt(item.mileage).toLocaleString()} mi</span>}
+                                {qData?.condition && <span className="capitalize">{qData.condition}</span>}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">{item.vin}</p>
+                              {item.notes && <p className="text-[10px] text-muted-foreground mt-0.5 italic">{item.notes}</p>}
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                Scanned {format(new Date(item.scanned_at), "M/d/yy h:mm a")}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {isQueued && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    // Navigate to addendum builder with this vehicle's data pre-filled
+                                    const params = new URLSearchParams();
+                                    params.set("vin", item.vin);
+                                    params.set("stock", item.stock_number || "");
+                                    params.set("ymm", qData?.decoded?.ymm || "");
+                                    navigate(`/?${params.toString()}`);
+                                    updateQueueItem(item.id, { status: "processing" });
+                                  }}
+                                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+                                >
+                                  <Printer className="w-3 h-3" />
+                                  Print
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    updateQueueItem(item.id, { status: "completed" });
+                                    toast.success("Marked complete");
+                                  }}
+                                  className="h-8 w-8 rounded-md border border-border flex items-center justify-center hover:bg-muted"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => {
+                                removeQueueItem(item.id);
+                                toast.success("Removed from queue");
+                              }}
+                              className="h-8 w-8 rounded-md border border-border flex items-center justify-center hover:bg-destructive/5"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>

@@ -27,6 +27,8 @@ import {
   ToggleLeft,
   Tag,
   TrendingUp,
+  ScanLine,
+  Printer,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
@@ -86,6 +88,7 @@ const AppShell = ({ children }: AppShellProps) => {
         { label: "Saved Addendums", path: "/saved", icon: FolderOpen },
         { label: "Buyers Guide", path: "/buyers-guide", icon: ScrollText, featureKey: "feature_buyers_guide" },
         { label: "Trade-Up Sticker", path: "/trade-up", icon: TrendingUp },
+        { label: "Print Queue", path: "/admin?tab=queue", icon: Printer },
       ],
     },
     configuration: {
@@ -358,6 +361,16 @@ const AppShell = ({ children }: AppShellProps) => {
             </div>
 
             <div className="flex items-center gap-1">
+              {/* Scan button — launches mobile lot scanner */}
+              <button
+                onClick={() => navigate("/scan")}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
+                title="Open lot scanner"
+              >
+                <ScanLine className="w-4 h-4" />
+                <span className="hidden md:inline">Scan</span>
+              </button>
+
               {/* Dark mode toggle */}
               <button
                 onClick={handleToggleDark}
