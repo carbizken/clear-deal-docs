@@ -1,43 +1,55 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VehicleInput {
-  year: string;
-  make: string;
-  model: string;
-  trim: string;
-  mileage: string;
-  color: string;
-  condition: string;
-  bodyStyle: string;
-  engine: string;
-  transmission: string;
-  driveType: string;
-  fuelType: string;
-  price: string;
+  year?: string;
+  make?: string;
+  model?: string;
+  trim?: string;
+  mileage?: string;
+  color?: string;
+  condition?: string;
+  bodyStyle?: string;
+  engine?: string;
+  transmission?: string;
+  driveType?: string;
+  fuelType?: string;
+  price?: string;
 }
 
-// AI vehicle description generator
-// In production, this calls Claude API via Supabase Edge Function
-// For now, generates a structured template-based description
 export const useAiDescription = () => {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const generate = async (vehicle: Partial<VehicleInput>): Promise<string> => {
+  const generate = async (vehicle: VehicleInput): Promise<string> => {
     setGenerating(true);
+    setError(null);
 
-    // Template-based generation (swap for Claude API in production)
-    const desc = buildDescription(vehicle);
+    try {
+      // Call Supabase Edge Function (holds API key securely)
+      const { data, error: fnError } = await supabase.functions.invoke("ai-description", {
+        body: { vehicle },
+      });
 
-    // Simulate slight delay for UX
-    await new Promise(r => setTimeout(r, 500));
-    setGenerating(false);
-    return desc;
+      if (fnError) throw new Error(fnError.message);
+      if (!data?.success) throw new Error(data?.error || "Failed to generate description");
+
+      setGenerating(false);
+      return data.description;
+    } catch (err: any) {
+      // Fallback to template if edge function unavailable
+      console.warn("AI description edge function unavailable, using template:", err.message);
+      setError(null); // Don't show error for fallback
+      setGenerating(false);
+      return buildTemplate(vehicle);
+    }
   };
 
-  return { generate, generating };
+  return { generate, generating, error };
 };
 
-function buildDescription(v: Partial<VehicleInput>): string {
+// Template fallback when edge function is unavailable
+function buildTemplate(v: VehicleInput): string {
   const parts: string[] = [];
   const ymm = [v.year, v.make, v.model, v.trim].filter(Boolean).join(" ");
 
@@ -48,24 +60,16 @@ function buildDescription(v: Partial<VehicleInput>): string {
   }
 
   if (v.mileage && parseInt(v.mileage) > 0) {
-    const mi = parseInt(v.mileage).toLocaleString();
-    parts.push(`Only ${mi} miles.`);
+    parts.push(`Only ${parseInt(v.mileage).toLocaleString()} miles.`);
   }
 
   const specs: string[] = [];
   if (v.engine) specs.push(v.engine);
   if (v.transmission) specs.push(v.transmission);
   if (v.driveType) specs.push(v.driveType);
-  if (v.fuelType && v.fuelType.toLowerCase() !== "gasoline") specs.push(v.fuelType);
   if (specs.length > 0) parts.push(`Equipped with ${specs.join(", ")}.`);
 
-  if (v.bodyStyle) parts.push(`${v.bodyStyle} body style.`);
-
-  if (v.price && parseFloat(v.price) > 0) {
-    parts.push(`Priced at $${parseFloat(v.price).toLocaleString()}.`);
-  }
-
-  parts.push("Contact us today for a test drive and to learn about our dealer-installed accessories and protection packages included with this vehicle.");
+  parts.push("Contact us today for a test drive and to learn about our dealer-installed accessories and protection packages.");
 
   return parts.join(" ");
 }
