@@ -373,7 +373,7 @@ const AppShell = ({ children }: AppShellProps) => {
 
       {/* Main content area */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
-        {/* Top bar — HarteCash navy gradient style */}
+        {/* Top bar — logo left, controls right */}
         <header className="sticky top-0 z-20 topbar-navy text-white border-b border-white/10">
           <div className="flex items-center justify-between h-14 px-4 lg:px-6">
             <div className="flex items-center gap-3 min-w-0">
@@ -384,22 +384,8 @@ const AppShell = ({ children }: AppShellProps) => {
                 <Menu className="w-5 h-5" />
               </button>
 
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-white truncate leading-tight">
-                  {greeting}, {capitalized}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-500 text-amber-950 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    Admin
-                  </span>
-                  {currentStore?.name && (
-                    <span className="text-[11px] text-white/70 truncate">
-                      · {currentStore.name}
-                    </span>
-                  )}
-                </div>
-              </div>
+              {/* Logo on the left */}
+              <Logo variant="full" inverted size={28} />
             </div>
 
             <div className="flex items-center gap-1">
