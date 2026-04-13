@@ -561,7 +561,7 @@ const AppShell = ({ children }: AppShellProps) => {
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/scan`);
+                  navigator.clipboard.writeText(`https://autolabels.io/scan`);
                   alert("Link copied!");
                 }}
                 className="flex-1 h-10 rounded-lg border-2 border-border text-sm font-semibold text-foreground hover:bg-muted"
