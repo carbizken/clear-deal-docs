@@ -532,10 +532,10 @@ const AppShell = ({ children }: AppShellProps) => {
               Scan this QR code with your iPhone or iPad to open the mobile vehicle scanner.
             </p>
             <div className="flex justify-center py-4">
-              <QRCodeSVG value={`${window.location.origin}/scan`} size={200} level="M" />
+              <QRCodeSVG value={`https://autolabels.io/scan`} size={200} level="M" />
             </div>
             <p className="text-xs text-muted-foreground break-all font-mono">
-              {window.location.origin}/scan
+              autolabels.io/scan
             </p>
             {/* Text link to phone */}
             <div className="flex gap-2">
@@ -549,7 +549,7 @@ const AppShell = ({ children }: AppShellProps) => {
                 onClick={() => {
                   const phone = (document.getElementById("sms-phone-input") as HTMLInputElement)?.value?.replace(/\D/g, "");
                   if (!phone || phone.length < 10) { alert("Enter a valid phone number"); return; }
-                  const smsBody = encodeURIComponent(`Open the lot scanner on your phone: ${window.location.origin}/scan`);
+                  const smsBody = encodeURIComponent(`Open the lot scanner on your phone: https://autolabels.io/scan`);
                   window.open(`sms:${phone}?body=${smsBody}`, "_blank");
                 }}
                 className="h-10 px-4 rounded-lg bg-teal text-primary-foreground text-sm font-semibold hover:opacity-90"
@@ -561,7 +561,7 @@ const AppShell = ({ children }: AppShellProps) => {
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/scan`);
+                  navigator.clipboard.writeText(`https://autolabels.io/scan`);
                   alert("Link copied!");
                 }}
                 className="flex-1 h-10 rounded-lg border-2 border-border text-sm font-semibold text-foreground hover:bg-muted"
