@@ -340,14 +340,14 @@ const EmailSignature = ({ onCopy, copiedId }: { onCopy: (v: string, id: string) 
   const signatureHtml = `<table cellpadding="0" cellspacing="0" border="0" style="font-family: -apple-system, 'Inter', sans-serif;">
   <tr>
     <td style="padding-right: 16px; border-right: 2px solid #2563EB;">
-      <img src="https://autocurb.io/logo-mark.svg" width="48" height="48" alt="Autocurb" />
+      <img src="https://autolabels.io/logo-mark.svg" width="48" height="48" alt="AutoLabels" />
     </td>
     <td style="padding-left: 16px;">
       <div style="font-size: 15px; font-weight: 700; color: #0F1E3C; letter-spacing: -0.01em;">Your Name</div>
-      <div style="font-size: 13px; color: #64748B;">Title · Autocurb.io</div>
-      <div style="font-size: 12px; color: #2563EB; margin-top: 4px;">Where the lot meets the cloud.</div>
+      <div style="font-size: 13px; color: #64748B;">Title · AutoLabels.io</div>
+      <div style="font-size: 12px; color: #2563EB; margin-top: 4px;">Every label. Every vehicle. Every deal.</div>
       <div style="font-size: 12px; color: #64748B; margin-top: 6px;">
-        <a href="https://autocurb.io" style="color: #2563EB; text-decoration: none;">autocurb.io</a>
+        <a href="https://autolabels.io" style="color: #2563EB; text-decoration: none;">autolabels.io</a>
       </div>
     </td>
   </tr>
@@ -366,10 +366,10 @@ const EmailSignature = ({ onCopy, copiedId }: { onCopy: (v: string, id: string) 
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#0F1E3C", letterSpacing: "-0.01em" }}>
                   Your Name
                 </div>
-                <div style={{ fontSize: 13, color: "#64748B" }}>Title · Autocurb.io</div>
-                <div style={{ fontSize: 12, color: "#2563EB", marginTop: 4 }}>Where the lot meets the cloud.</div>
+                <div style={{ fontSize: 13, color: "#64748B" }}>Title · AutoLabels.io</div>
+                <div style={{ fontSize: 12, color: "#2563EB", marginTop: 4 }}>Every label. Every vehicle. Every deal.</div>
                 <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>
-                  <a href="https://autocurb.io" style={{ color: "#2563EB", textDecoration: "none" }}>autocurb.io</a>
+                  <a href="https://autolabels.io" style={{ color: "#2563EB", textDecoration: "none" }}>autolabels.io</a>
                 </div>
               </td>
             </tr>
