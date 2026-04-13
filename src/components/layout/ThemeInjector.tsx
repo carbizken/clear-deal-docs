@@ -34,7 +34,7 @@ function hexToHsl(hex: string): string | null {
 // Default Autocurb brand colors — when tenant uses these, the CSS stylesheet
 // defaults are already correct so we must NOT override them inline
 // (hex→HSL rounding produces a slightly-off washed-out look).
-const DEFAULT_PRIMARY = "#0f1e3c";
+const DEFAULT_PRIMARY = "#0b2041";
 const DEFAULT_SECONDARY = "#2563eb";
 
 function isDefault(hex: string, def: string): boolean {

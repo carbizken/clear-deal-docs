@@ -661,7 +661,7 @@ const Admin = () => {
                     updateSettings(defaults);
                     // Reset tenant colors to Autocurb defaults
                     updateTenant({
-                      primary_color: "#0F1E3C",
+                      primary_color: "#0B2041",
                       secondary_color: "#2563EB",
                       logo_url: "/logo-mark.svg",
                       name: "AutoLabels.io",

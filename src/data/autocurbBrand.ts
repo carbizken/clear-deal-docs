@@ -160,7 +160,7 @@ export const AUTOCURB_TENANT_DEFAULT = {
   name: "AutoLabels.io",
   slug: "autolabels",
   logo_url: "/logo-mark.svg",
-  primary_color: "#0F1E3C",
+  primary_color: "#0B2041",
   secondary_color: "#2563EB",
   is_active: true,
 };

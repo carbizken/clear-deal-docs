@@ -33,7 +33,7 @@ const DEFAULT_TENANT: Tenant = {
   name: "AutoLabels.io",
   slug: "autolabels",
   logo_url: "/logo-mark.svg",
-  primary_color: "#0F1E3C",
+  primary_color: "#0B2041",
   secondary_color: "#2563EB",
   created_at: new Date().toISOString(),
   is_active: true,
