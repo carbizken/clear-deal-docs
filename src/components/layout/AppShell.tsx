@@ -549,7 +549,7 @@ const AppShell = ({ children }: AppShellProps) => {
                 onClick={() => {
                   const phone = (document.getElementById("sms-phone-input") as HTMLInputElement)?.value?.replace(/\D/g, "");
                   if (!phone || phone.length < 10) { alert("Enter a valid phone number"); return; }
-                  const smsBody = encodeURIComponent(`Open the lot scanner on your phone: ${window.location.origin}/scan`);
+                  const smsBody = encodeURIComponent(`Open the lot scanner on your phone: https://autolabels.io/scan`);
                   window.open(`sms:${phone}?body=${smsBody}`, "_blank");
                 }}
                 className="h-10 px-4 rounded-lg bg-teal text-primary-foreground text-sm font-semibold hover:opacity-90"
