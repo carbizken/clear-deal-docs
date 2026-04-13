@@ -53,7 +53,7 @@ export const useEmailDistribution = () => {
 
     const html = `
       <div style="font-family: -apple-system, 'Inter', sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #0f1e3c; color: white; padding: 20px; text-align: center;">
+        <div style="background: #0B2041; color: white; padding: 20px; text-align: center;">
           <h2 style="margin: 0; font-size: 18px;">Signed Addendum — ${data.vehicleYmm}</h2>
         </div>
         <div style="padding: 24px; background: #ffffff; border: 1px solid #e5e7eb;">
