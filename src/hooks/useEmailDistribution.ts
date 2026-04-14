@@ -68,7 +68,7 @@ export const useEmailDistribution = () => {
           <p style="font-size: 12px; color: #6b7280;">This is an automated notification from your addendum platform. The signed document is attached as a PDF or can be accessed from the Vehicle Files section of your dashboard.</p>
         </div>
         <div style="padding: 12px; text-align: center; font-size: 11px; color: #9ca3af;">
-          Powered by Autocurb.io — Where the lot meets the cloud
+          Powered by AutoLabels.io — Clear. Compliant. Consistent.
         </div>
       </div>
     `;

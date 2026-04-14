@@ -5,11 +5,11 @@ import { useState, useEffect, useCallback } from "react";
 //
 // The addon runs in two modes:
 //
-// 1. EMBEDDED — running inside HarteCash (or another parent app)
+// 1. EMBEDDED — running inside a parent app (e.g. dealer platform)
 //    as an iframe. Parent app posts tenant data via window.postMessage
 //    and we pull branding, preferences, logo, and user from there.
 //
-//    Detection: presence of `?platform=hartecash` URL param OR running
+//    Detection: presence of `?platform=autolabels` URL param OR running
 //    inside an iframe.
 //
 //    Protocol:

@@ -111,6 +111,7 @@ const AppShell = ({ children }: AppShellProps) => {
       defaultOpen: true,
       items: [
         { label: "Saved Addendums", path: "/saved", icon: FolderOpen },
+        { label: "Add to Inventory", path: "/add-inventory", icon: Package },
         { label: "Get-Ready", path: "/admin?tab=getready", icon: Clock },
         { label: "Vehicle Files", path: "/admin?tab=files", icon: FolderOpen },
         { label: "Print Queue", path: "/admin?tab=queue", icon: Printer },
@@ -179,6 +180,7 @@ const AppShell = ({ children }: AppShellProps) => {
     if (pathname === "/trade-up") { crumbs.push({ label: "Documents" }); crumbs.push({ label: "Trade-Up Sticker" }); return crumbs; }
     if (pathname === "/new-car-sticker") { crumbs.push({ label: "Documents" }); crumbs.push({ label: "New Car Sticker" }); return crumbs; }
     if (pathname === "/description-writer") { crumbs.push({ label: "Documents" }); crumbs.push({ label: "Description Writer" }); return crumbs; }
+    if (pathname === "/add-inventory") { crumbs.push({ label: "Inventory" }); crumbs.push({ label: "Add to Inventory" }); return crumbs; }
     if (pathname === "/compliance") { crumbs.push({ label: "Compliance" }); crumbs.push({ label: "Compliance Guide" }); return crumbs; }
     if (pathname === "/admin") {
       const tab = new URLSearchParams(search).get("tab") || "products";
@@ -208,15 +210,6 @@ const AppShell = ({ children }: AppShellProps) => {
 
   const userInitial = user?.email?.[0]?.toUpperCase() || "U";
   const recentNotifications = entries.slice(-8).reverse();
-  const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
-  })();
-  const firstName = user?.email?.split("@")[0].split(".")[0] || "there";
-  const capitalized = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}

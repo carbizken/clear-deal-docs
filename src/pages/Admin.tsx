@@ -659,7 +659,7 @@ const Admin = () => {
                     };
                     setBranding(defaults);
                     updateSettings(defaults);
-                    // Reset tenant colors to Autocurb defaults
+                    // Reset tenant colors to AutoLabels defaults
                     updateTenant({
                       primary_color: "#0B2041",
                       secondary_color: "#2563EB",

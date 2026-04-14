@@ -74,7 +74,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 lg:p-6 max-w-[1400px] mx-auto space-y-5">
-      {/* Status pills bar (HarteCash style) */}
+      {/* Status pills bar */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <StatusPill dotColor="bg-red-500" label="Needs Follow-Up" value={drafts.length} />
@@ -98,7 +98,7 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* HarteCash gradient stat cards */}
+      {/* Gradient stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <GradientStatCard
           className="stat-card-blue"
@@ -134,7 +134,7 @@ const Dashboard = () => {
         <QuickStat icon={DollarSign} iconColor="text-purple-500" value={all.length > 0 ? Math.round(revenueMonth / Math.max(all.length, 1)) : 0} label="Avg PVR" prefix="$" />
       </div>
 
-      {/* Pipeline overview — HarteCash-style segmented bar */}
+      {/* Pipeline overview — Segmented bar */}
       <div className="bg-card rounded-xl border border-border shadow-premium p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -163,7 +163,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Search and filters (HarteCash style) */}
+      {/* Search and filters (Filtered) */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

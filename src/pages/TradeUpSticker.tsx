@@ -71,8 +71,8 @@ const TradeUpSticker = () => {
     return "";
   }, [logoSource, customLogoUrl, tenant, currentStore, settings]);
 
-  // QR URL — prefers custom, falls back to HarteCash customer flow
-  // Embedded mode: builds URL that leads into HarteCash lead capture with VIN + store + source
+  // QR URL — prefers custom, falls back to lead capture flow
+  // Embedded mode: builds URL that leads into lead capture with VIN + store + source
   const qrUrl = useMemo(() => {
     if (customQrUrl.trim()) return customQrUrl;
 
@@ -83,7 +83,7 @@ const TradeUpSticker = () => {
     params.set("source", "trade_up_sticker");
     params.set("campaign", selectedTemplateId);
 
-    // If embedded inside HarteCash, point at the parent's trade-in flow
+    // If embedded inside parent app, point at the parent's trade-in flow
     if (isEmbedded && tenant?.slug) {
       return `https://${tenant.slug}.app/trade-in?${params.toString()}`;
     }
@@ -152,7 +152,7 @@ const TradeUpSticker = () => {
             Trade-Up Sticker
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Hook customers with a promotional sticker. QR scan drops them into your {isEmbedded ? tenant?.name || "HarteCash" : "lead capture"} customer flow.
+            Hook customers with a promotional sticker. QR scan drops them into your {isEmbedded ? tenant?.name || "AutoLabels" : "lead capture"} customer flow.
           </p>
         </div>
         <div className="flex items-center gap-2 no-print">

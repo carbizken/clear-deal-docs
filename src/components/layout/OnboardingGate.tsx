@@ -8,7 +8,7 @@ interface OnboardingGateProps {
 
 /**
  * Redirects standalone users to /onboarding on first run.
- * Embedded users (running inside HarteCash) skip this entirely since
+ * Embedded users (running inside a parent app) skip this entirely since
  * their tenant data comes from the parent app.
  */
 const OnboardingGate = ({ children }: OnboardingGateProps) => {
